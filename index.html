@@ -842,7 +842,7 @@
                 "form-problem-placeholder": "Describa su problema para que podamos ponernos en contacto con usted",
                 "form-submit-button": "Enviar mensaje",
                 "form-success-message": "¡Nuestro equipo se pondrá en contacto con usted en breve!",
-                "footer-text": "&copy; 2024 Kognix. Todos los derechos reservados.",
+                "footer-text": "© 2024 Kognix. Todos los derechos reservados.",
             }
         };
 
@@ -1021,7 +1021,8 @@
                 this.setupDragAndDrop();
             }
 
-            initializeElements() {
+            // A more robust way to define methods to ensure 'this' is always the class instance
+            initializeElements = () => {
                 // UI Elements
                 this.fileInput = document.getElementById('file-upload');
                 this.fileList = document.getElementById('file-list');
@@ -1059,15 +1060,15 @@
                 this.modalDocumentImage = document.getElementById('modal-document-image');
             }
 
-            setupEventListeners() {
-                this.fileInput.addEventListener('change', (e) => this.handleFileSelection(e));
+            setupEventListeners = () => {
+                this.fileInput.addEventListener('change', (e) => this.addFiles(Array.from(e.target.files)));
                 this.processAllButton.addEventListener('click', () => this.processAllDocuments());
                 this.clearAllButton.addEventListener('click', () => this.clearAllFiles());
                 
                 // Export button listeners
                 this.exportCSVButton.addEventListener('click', () => this.exportToCSV());
                 this.exportExcelButton.addEventListener('click', () => this.exportToExcel());
-                this.shareGoogleSheetsButton.addEventListener('click', () => this.exportToCSV('invoice_data.gsheet'));
+                this.shareGoogleSheetsButton.addEventListener('click', () => this.shareToGoogleSheets());
                 
                 // Action button listeners
                 this.processMoreButton.addEventListener('click', () => this.resetToUpload());
@@ -1080,7 +1081,7 @@
                 });
             }
 
-            setupDragAndDrop() {
+            setupDragAndDrop = () => {
                 const uploadArea = this.uploadSection.querySelector('.border-dashed');
                 
                 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -1108,12 +1109,7 @@
                 });
             }
 
-            handleFileSelection(e) {
-                const files = Array.from(e.target.files);
-                this.addFiles(files);
-            }
-
-            addFiles(newFiles) {
+            addFiles = (newFiles) => {
                 // Filter valid files
                 const validFiles = newFiles.filter(file => {
                     return file.type.startsWith('image/') || file.type === 'application/pdf';
@@ -1142,7 +1138,7 @@
                 this.updateButtons();
             }
 
-            updateFileList() {
+            updateFileList = () => {
                 if (this.files.length === 0) {
                     this.fileList.classList.add('hidden');
                     return;
@@ -1157,7 +1153,7 @@
                 });
             }
 
-            createFileItem(fileData) {
+            createFileItem = (fileData) => {
                 const div = document.createElement('div');
                 div.className = 'file-item';
                 div.setAttribute('data-file-id', fileData.id);
@@ -1181,13 +1177,13 @@
                 return div;
             }
 
-            getFileIcon(type) {
+            getFileIcon = (type) => {
                 if (type === 'application/pdf') return 'fa-file-pdf';
                 if (type.startsWith('image/')) return 'fa-file-image';
                 return 'fa-file';
             }
 
-            formatFileSize(bytes) {
+            formatFileSize = (bytes) => {
                 if (bytes === 0) return '0 Bytes';
                 const k = 1024;
                 const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -1195,7 +1191,7 @@
                 return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
             }
 
-            getStatusText(status) {
+            getStatusText = (status) => {
                 const statusMap = {
                     'uploaded': 'Ready',
                     'processing': 'Processing...',
@@ -1205,13 +1201,13 @@
                 return statusMap[status] || status;
             }
 
-            removeFile(fileId) {
+            removeFile = (fileId) => {
                 this.files = this.files.filter(f => f.id !== parseFloat(fileId));
                 this.updateFileList();
                 this.updateButtons();
             }
 
-            updateButtons() {
+            updateButtons = () => {
                 const hasFiles = this.files.length > 0;
                 this.processAllButton.disabled = !hasFiles || this.isProcessing;
                 this.clearAllButton.disabled = !hasFiles || this.isProcessing;
@@ -1222,14 +1218,14 @@
                 this.shareGoogleSheetsButton.disabled = !hasResults;
             }
 
-            clearAllFiles() {
+            clearAllFiles = () => {
                 this.files = [];
                 this.updateFileList();
                 this.updateButtons();
                 this.fileInput.value = '';
             }
 
-            async processAllDocuments() {
+            processAllDocuments = async () => {
                 if (this.files.length === 0 || this.isProcessing) return;
 
                 this.isProcessing = true;
@@ -1282,21 +1278,29 @@
                 this.isProcessing = false;
             }
 
-            updateFileStatusUI(fileId, status) {
+            // Fixed method using arrow function to maintain `this` context
+            updateFileStatusUI = (fileId, status) => {
                 const fileItem = this.filesContainer.querySelector(`[data-file-id="${fileId}"]`);
                 if (fileItem) {
                     const statusSpan = fileItem.querySelector('.file-status');
-                    statusSpan.textContent = this.getStatusText(status);
-                    statusSpan.className = `file-status file-status-${status}`;
+                    if(statusSpan) {
+                      statusSpan.textContent = this.getStatusText(status);
+                      statusSpan.className = `file-status file-status-${status}`;
+                    }
                 }
             }
 
-            updateProcessingStatus(message) {
-                this.processingStatus.textContent = message;
+            // Fixed method using arrow function to maintain `this` context
+            updateProcessingStatus = (message) => {
+                if(this.processingStatus) {
+                  this.processingStatus.textContent = message;
+                }
             }
 
-            updateOverallProgress(percentage) {
-                this.overallProgress.style.width = `${percentage}%`;
+            updateOverallProgress = (percentage) => {
+                if(this.overallProgress) {
+                  this.overallProgress.style.width = `${percentage}%`;
+                }
             }
 
             async fileToBase64(file) {
@@ -1320,7 +1324,7 @@
                 });
             }
 
-            generateDynamicInvoiceData() {
+            generateDynamicInvoiceData = () => {
                 const vendorNames = ['Acme Corp', 'Global Logistics', 'Tech Innovators', 'Creative Solutions'];
                 const productNames = ['Consulting Services', 'Software License', 'Web Hosting', 'IT Support', 'Graphic Design'];
                 
@@ -1362,7 +1366,7 @@
                 };
             }
 
-            showResults() {
+            showResults = () => {
                 this.processingSection.classList.add('hidden');
                 this.resultsSection.classList.remove('hidden');
                 
@@ -1371,7 +1375,7 @@
                 this.updateButtons();
             }
 
-            updateResultsStats() {
+            updateResultsStats = () => {
                 const completedResults = this.results.filter(r => !r.error);
                 const totalDocs = completedResults.length;
                 const amounts = completedResults.map(r => r.totalAmount || 0);
@@ -1379,13 +1383,14 @@
                 const avgAmount = totalDocs > 0 ? totalAmount / totalDocs : 0;
                 const vendors = new Set(completedResults.map(r => r.vendorName).filter(Boolean));
                 
-                this.totalProcessed.textContent = totalDocs;
-                this.totalAmount.textContent = `$${totalAmount.toFixed(2)}`;
-                this.avgAmount.textContent = `$${avgAmount.toFixed(2)}`;
-                this.uniqueVendors.textContent = vendors.size;
+                if (this.totalProcessed) this.totalProcessed.textContent = totalDocs;
+                if (this.totalAmount) this.totalAmount.textContent = `$${totalAmount.toFixed(2)}`;
+                if (this.avgAmount) this.avgAmount.textContent = `$${avgAmount.toFixed(2)}`;
+                if (this.uniqueVendors) this.uniqueVendors.textContent = vendors.size;
             }
 
-            populateResultsTable() {
+            populateResultsTable = () => {
+                if (!this.resultsTableBody) return;
                 this.resultsTableBody.innerHTML = '';
                 this.results.forEach(result => {
                     const row = document.createElement('tr');
@@ -1408,7 +1413,7 @@
                 });
             }
 
-            showDetails(fileId) {
+            showDetails = (fileId) => {
                 const result = this.results.find(r => r.fileId === parseFloat(fileId));
                 if (!result) return;
                 
@@ -1418,63 +1423,72 @@
                 // Display the original document
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    this.modalDocumentImage.src = e.target.result;
+                    if (this.modalDocumentImage) {
+                        this.modalDocumentImage.src = e.target.result;
+                    }
                 };
                 reader.readAsDataURL(fileData.file);
 
                 // Populate extracted data
-                this.modalExtractedData.innerHTML = `
-                    ${result.error ? `
-                        <p class="text-red-400">Error: ${result.error}</p>
-                    ` : `
-                        <p class="text-gray-400"><span class="font-bold text-white">Invoice Number:</span> ${result.invoiceNumber || 'N/A'}</p>
-                        <p class="text-gray-400"><span class="font-bold text-white">Vendor Name:</span> ${result.vendorName || 'N/A'}</p>
-                        <p class="text-gray-400"><span class="font-bold text-white">Invoice Date:</span> ${result.invoiceDate || 'N/A'}</p>
-                        <p class="text-gray-400"><span class="font-bold text-white">Due Date:</span> ${result.dueDate || 'N/A'}</p>
-                        <p class="text-gray-400"><span class="font-bold text-white">Total Amount:</span> $${result.totalAmount ? result.totalAmount.toFixed(2) : 'N/A'}</p>
-                        <hr class="border-gray-700 my-4">
-                        <h4 class="text-lg font-bold text-white">Line Items</h4>
-                        ${result.lineItems && result.lineItems.length > 0
-                            ? result.lineItems.map(item => `
-                                <div class="space-y-1 text-sm bg-gray-800 p-3 rounded-md">
-                                    <p class="text-gray-300"><span class="font-semibold text-white">Product:</span> ${item.product || 'N/A'}</p>
-                                    <p class="text-gray-300"><span class="font-semibold text-white">Quantity:</span> ${item.quantity || 'N/A'}</p>
-                                    <p class="text-gray-300"><span class="font-semibold text-white">Unit Price:</span> $${item.unitPrice ? item.unitPrice.toFixed(2) : 'N/A'}</p>
-                                    <p class="text-gray-300"><span class="font-semibold text-white">Total Price:</span> $${item.totalPrice ? item.totalPrice.toFixed(2) : 'N/A'}</p>
-                                </div>
-                            `).join('')
-                            : '<p class="text-gray-500">No line items found.</p>'
-                        }
-                    `}
-                `;
+                if (this.modalExtractedData) {
+                    this.modalExtractedData.innerHTML = `
+                        ${result.error ? `
+                            <p class="text-red-400">Error: ${result.error}</p>
+                        ` : `
+                            <p class="text-gray-400"><span class="font-bold text-white">Invoice Number:</span> ${result.invoiceNumber || 'N/A'}</p>
+                            <p class="text-gray-400"><span class="font-bold text-white">Vendor Name:</span> ${result.vendorName || 'N/A'}</p>
+                            <p class="text-gray-400"><span class="font-bold text-white">Invoice Date:</span> ${result.invoiceDate || 'N/A'}</p>
+                            <p class="text-gray-400"><span class="font-bold text-white">Due Date:</span> ${result.dueDate || 'N/A'}</p>
+                            <p class="text-gray-400"><span class="font-bold text-white">Total Amount:</span> $${result.totalAmount ? result.totalAmount.toFixed(2) : 'N/A'}</p>
+                            <hr class="border-gray-700 my-4">
+                            <h4 class="text-lg font-bold text-white">Line Items</h4>
+                            ${result.lineItems && result.lineItems.length > 0
+                                ? result.lineItems.map(item => `
+                                    <div class="space-y-1 text-sm bg-gray-800 p-3 rounded-md">
+                                        <p class="text-gray-300"><span class="font-semibold text-white">Product:</span> ${item.product || 'N/A'}</p>
+                                        <p class="text-gray-300"><span class="font-semibold text-white">Quantity:</span> ${item.quantity || 'N/A'}</p>
+                                        <p class="text-gray-300"><span class="font-semibold text-white">Unit Price:</span> $${item.unitPrice ? item.unitPrice.toFixed(2) : 'N/A'}</p>
+                                        <p class="text-gray-300"><span class="font-semibold text-white">Total Price:</span> $${item.totalPrice ? item.totalPrice.toFixed(2) : 'N/A'}</p>
+                                    </div>
+                                `).join('')
+                                : '<p class="text-gray-500">No line items found.</p>'
+                            }
+                        `}
+                    `;
+                }
 
                 this.showModal();
             }
 
-            showModal() {
-                this.detailModal.classList.remove('hidden');
+            showModal = () => {
+                if (this.detailModal) {
+                    this.detailModal.classList.remove('hidden');
+                }
             }
 
-            hideModal() {
-                this.detailModal.classList.add('hidden');
+            hideModal = () => {
+                if (this.detailModal) {
+                    this.detailModal.classList.add('hidden');
+                }
             }
 
-            resetToUpload() {
+            resetToUpload = () => {
                 this.resultsSection.classList.add('hidden');
+                this.processingSection.classList.add('hidden');
                 this.uploadSection.classList.remove('hidden');
                 this.files = [];
                 this.results = [];
-                this.fileInput.value = '';
-                this.filesContainer.innerHTML = '';
-                this.fileList.classList.add('hidden');
+                if (this.fileInput) this.fileInput.value = '';
+                if (this.filesContainer) this.filesContainer.innerHTML = '';
+                if (this.fileList) this.fileList.classList.add('hidden');
                 this.updateButtons();
             }
 
-            clearResults() {
+            clearResults = () => {
                 this.resetToUpload();
             }
 
-            exportToCSV(fileName = 'invoice_data.csv') {
+            exportToCSV = (fileName = 'invoice_data.csv') => {
                 if (this.results.length === 0) {
                     this.showNotification("No results to export.", "error");
                     return;
@@ -1531,7 +1545,7 @@
                 document.body.removeChild(link);
             }
 
-            exportToExcel() {
+            exportToExcel = () => {
                 if (this.results.length === 0) {
                     this.showNotification("No results to export.", "error");
                     return;
@@ -1579,7 +1593,7 @@
                 XLSX.writeFile(workbook, "invoice_data.xlsx");
             }
             
-            showNotification(message, type = 'info') {
+            showNotification = (message, type = 'info') => {
                 const notification = document.createElement('div');
                 notification.textContent = message;
                 notification.className = `fixed bottom-5 left-1/2 -translate-x-1/2 p-4 rounded-lg shadow-xl text-white z-[60] transition-all duration-300`;
@@ -1599,7 +1613,7 @@
                 }, 3000);
             }
 
-            shareToGoogleSheets() {
+            shareToGoogleSheets = () => {
                 this.showNotification("Sharing to Google Sheets is a premium feature. Please contact sales.", "info");
             }
         }

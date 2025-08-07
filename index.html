@@ -183,7 +183,7 @@
     <header class="bg-gray-950 sticky top-0 z-50 shadow-lg">
         <nav class="container mx-auto px-4 py-4 flex justify-between items-center">
             <!-- Kognix Logo -->
-            <a href="#" class="flex items-center space-x-2">
+            <a href="/" class="flex items-center space-x-2">
                 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <rect x="0.5" y="0.5" width="10" height="10" rx="2" fill="url(#paint0_linear_2_23)" stroke="url(#paint1_linear_2_23)"/>
                     <rect x="21.5" y="0.5" width="10" height="10" rx="2" fill="url(#paint2_linear_2_23)" stroke="url(#paint3_linear_2_23)"/>
@@ -248,7 +248,6 @@
                 <a href="#solutions-section" class="block py-2 px-4 hover:bg-gray-800 rounded-lg" data-i18n="nav-services">Services</a>
                 <a href="#dynamic-sections" class="block py-2 px-4 hover:bg-gray-800 rounded-lg" data-i18n="nav-platform">Platform</a>
                 <a href="#pricing" class="block py-2 px-4 hover:bg-gray-800 rounded-lg" data-i18n="nav-pricing">Pricing</a>
-                <a href="#contact" class="block py-2 px-4 hover:bg-gray-800 rounded-lg" data-i18n="nav-contact">Contact</a>
                 <a href="#mvp-section" class="block bg-white text-gray-900 text-center font-semibold py-2 px-6 rounded-md mt-2" data-i18n="nav-demo">Try the MVP</a>
             </div>
         </div>
@@ -265,6 +264,7 @@
                     Kognix is building the AI platform to deliver proven data, evaluations, and outcomes to AI labs, governments, and enterprises.
                 </p>
                 <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                    <!-- FIX: Corrected the href to point to the MVP section -->
                     <a href="#mvp-section" class="bg-white text-gray-900 font-bold py-3 px-8 rounded-md transition-all duration-300 transform hover:scale-105 shadow-lg" data-i18n="hero-cta-demo">
                         Try the MVP
                     </a>
@@ -609,10 +609,10 @@
                 "nav-platform": "Platform",
                 "nav-pricing": "Pricing",
                 "nav-contact": "Contact",
-                "nav-demo": "Request Demo",
+                "nav-demo": "Try the MVP",
                 "hero-headline": "Breakthrough AI from Data to Deployment.",
                 "hero-subheadline": "Kognix is building the AI platform to deliver proven data, evaluations, and outcomes to AI labs, governments, and enterprises.",
-                "hero-cta-demo": "Book a Demo",
+                "hero-cta-demo": "Try the MVP",
                 "hero-cta-build": "Build with AI →",
                 "mvp-title": "Advanced Invoice Processing AI",
                 "mvp-subtitle": "Upload multiple invoices, receipts, or business documents and watch our AI extract key information instantly. Export results to CSV or Google Sheets.",
@@ -689,10 +689,10 @@
                 "nav-platform": "Plateforme",
                 "nav-pricing": "Tarifs",
                 "nav-contact": "Contact",
-                "nav-demo": "Demander une démo",
+                "nav-demo": "Essayer l'MVP",
                 "hero-headline": "L'IA Révolutionnaire de la Donnée au Déploiement.",
                 "hero-subheadline": "Kognix construit la plateforme IA pour offrir des données, des évaluations et des résultats prouvés aux laboratoires d'IA, aux gouvernements et aux entreprises.",
-                "hero-cta-demo": "Réserver une démo",
+                "hero-cta-demo": "Essayer l'MVP",
                 "hero-cta-build": "Créer avec l'IA →",
                 "mvp-title": "IA avancée de traitement des factures",
                 "mvp-subtitle": "Téléchargez plusieurs factures, reçus ou documents commerciaux et regardez notre IA extraire instantanément les informations clés. Exportez les résultats vers CSV ou Google Sheets.",
@@ -1249,7 +1249,6 @@
                         
                         this.updateFileStatusUI(fileData.id, 'processing');
                         
-                        // Use a single function to generate unique mock data for any invoice.
                         const result = this.generateDynamicInvoiceData();
                         
                         await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call latency
@@ -1316,7 +1315,7 @@
                 console.warn('NOTE: Using mock data for invoice processing as the API endpoint is unavailable.');
                 return new Promise((resolve) => {
                     setTimeout(() => {
-                        resolve(this.generateDynamicInvoiceData('uploaded_image.jpg'));
+                        resolve(this.generateDynamicInvoiceData());
                     }, 1500); // Simulate network latency
                 });
             }

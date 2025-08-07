@@ -625,6 +625,8 @@
                 "clear-button": "Clear All",
                 "processing-title": "Processing Documents...",
                 "processing-starting": "Starting...",
+                "processing-file": "Processing {fileName}...",
+                "processing-completed": "Processing completed!",
                 "results-heading": "Extraction Results",
                 "export-csv-button": "Export CSV",
                 "export-excel-button": "Export Excel",
@@ -705,6 +707,8 @@
                 "clear-button": "Tout effacer",
                 "processing-title": "Traitement des documents...",
                 "processing-starting": "Démarrage...",
+                "processing-file": "Traitement de {fileName}...",
+                "processing-completed": "Traitement terminé !",
                 "results-heading": "Résultats d'extraction",
                 "export-csv-button": "Exporter CSV",
                 "export-excel-button": "Exporter Excel",
@@ -760,9 +764,9 @@
                 "form-phone-placeholder": "Votre numéro de téléphone",
                 "form-problem-label": "Décrivez votre problème",
                 "form-problem-placeholder": "Décrivez votre problème afin que nous puissions vous répondre",
-                "form-submit-button": "Envoyer le message",
-                "form-success-message": "Notre équipe vous répondra sous peu !",
-                "footer-text": "© 2024 Kognix. Tous droits réservés.",
+                "form-submit-button": "Enviar el mensaje",
+                "form-success-message": "¡Nuestro equipo se pondrá en contacto con usted en breve!",
+                "footer-text": "© 2024 Kognix. Todos los derechos reservados.",
             },
             es: {
                 "nav-services": "Servicios",
@@ -785,6 +789,8 @@
                 "clear-button": "Borrar todo",
                 "processing-title": "Procesando documentos...",
                 "processing-starting": "Empezando...",
+                "processing-file": "Procesando {fileName}...",
+                "processing-completed": "Procesamiento completado!",
                 "results-heading": "Resultados de extracción",
                 "export-csv-button": "Exportar CSV",
                 "export-excel-button": "Exportar Excel",
@@ -928,13 +934,13 @@
             const setupThree = (containerId, geometryCreator, color) => {
                 const container = document.getElementById(containerId);
                 if (!container) return;
-            
+        
                 const scene = new THREE.Scene();
                 const camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 0.1, 1000);
                 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
                 renderer.setSize(container.offsetWidth, container.offsetHeight);
                 container.appendChild(renderer.domElement);
-            
+        
                 const material = new THREE.MeshPhysicalMaterial({
                     color: color,
                     metalness: 0.9,
@@ -946,29 +952,29 @@
                 });
                 const mesh = new THREE.Mesh(geometryCreator(), material);
                 scene.add(mesh);
-            
+        
                 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
                 scene.add(ambientLight);
-            
+        
                 const pointLight = new THREE.PointLight(0xa78bfa, 1);
                 pointLight.position.set(5, 5, 5);
                 scene.add(pointLight);
-            
+        
                 camera.position.z = 5;
-            
+        
                 window.addEventListener('resize', () => {
                     camera.aspect = container.offsetWidth / container.offsetHeight;
                     camera.updateProjectionMatrix();
                     renderer.setSize(container.offsetWidth, container.offsetHeight);
                 });
-            
+        
                 const animate = () => {
                     requestAnimationFrame(animate);
                     mesh.rotation.x += 0.005;
                     mesh.rotation.y += 0.005;
                     renderer.render(scene, camera);
                 };
-            
+        
                 animate();
             };
 
@@ -1225,6 +1231,8 @@
                 this.fileInput.value = '';
             }
 
+            // The main method to process all uploaded documents.
+            // This now calls a new method to interact with the Gemini API for real data.
             processAllDocuments = async () => {
                 if (this.files.length === 0 || this.isProcessing) return;
 
@@ -1240,14 +1248,14 @@
                     const fileData = initialFiles[i];
                     
                     try {
-                        this.updateProcessingStatus(`Processing ${fileData.name}...`);
+                        // Update processing status with the current file name, using translation
+                        this.updateProcessingStatus(this.getTranslation('processing-file', { fileName: fileData.name }), true);
                         this.updateOverallProgress((i / initialFiles.length) * 100);
                         
                         this.updateFileStatusUI(fileData.id, 'processing');
                         
-                        const result = this.generateDynamicInvoiceData();
-                        
-                        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call latency
+                        // Use the new API extraction method to get real data
+                        const result = await this.extractInvoiceData(fileData.file);
                         
                         fileData.result = result;
                         fileData.status = 'completed';
@@ -1268,7 +1276,7 @@
                     }
                 }
 
-                this.updateProcessingStatus('Processing completed!');
+                this.updateProcessingStatus(this.getTranslation('processing-completed'), true);
                 this.updateOverallProgress(100);
                 
                 setTimeout(() => {
@@ -1277,6 +1285,16 @@
                 
                 this.isProcessing = false;
             }
+
+            // Helper function to dynamically get translated text with placeholders
+            getTranslation = (key, replacements = {}) => {
+                const lang = localStorage.getItem('kognix-lang') || 'en';
+                let text = translations[lang][key] || translations['en'][key] || key;
+                for (const [placeholder, value] of Object.entries(replacements)) {
+                    text = text.replace(`{${placeholder}}`, value);
+                }
+                return text;
+            };
 
             // Fixed method using arrow function to maintain `this` context
             updateFileStatusUI = (fileId, status) => {
@@ -1302,7 +1320,8 @@
                   this.overallProgress.style.width = `${percentage}%`;
                 }
             }
-
+            
+            // New method to convert file to Base64, required for the API call
             async fileToBase64(file) {
                 return new Promise((resolve, reject) => {
                     const reader = new FileReader();
@@ -1315,57 +1334,132 @@
                 });
             }
 
-            async callServerlessFunction(base64ImageData) {
-                console.warn('NOTE: Using mock data for invoice processing as the API endpoint is unavailable.');
-                return new Promise((resolve) => {
-                    setTimeout(() => {
-                        resolve(this.generateDynamicInvoiceData());
-                    }, 1500); // Simulate network latency
-                });
-            }
+            // New method to call the Gemini API for invoice data extraction
+            async extractInvoiceData(file) {
+                try {
+                    const base64ImageData = await this.fileToBase64(file);
 
-            generateDynamicInvoiceData = () => {
-                const vendorNames = ['Acme Corp', 'Global Logistics', 'Tech Innovators', 'Creative Solutions'];
-                const productNames = ['Consulting Services', 'Software License', 'Web Hosting', 'IT Support', 'Graphic Design'];
-                
-                const randomVendor = vendorNames[Math.floor(Math.random() * vendorNames.length)];
-                const randomInvoiceNumber = `INV-${Math.floor(Math.random() * 1000000)}`;
-                const randomDate = new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000).toLocaleDateString();
+                    // Define the prompt with a structured JSON schema
+                    const prompt = `Extract the following key information from the provided invoice, receipt, or business document image. Respond only with a JSON object.
+                    Fields to extract:
+                    - invoiceNumber: The unique invoice or document number (string).
+                    - vendorName: The name of the company or vendor (string).
+                    - invoiceDate: The date of the invoice (string, in 'YYYY-MM-DD' format if possible).
+                    - dueDate: The payment due date (string, in 'YYYY-MM-DD' format if possible).
+                    - totalAmount: The total amount due, including tax (number).
+                    - currency: The currency of the total amount (e.g., 'USD', 'EUR', 'CAD') (string).
+                    - taxAmount: The tax amount (number, optional).
+                    - subtotal: The subtotal before tax (number, optional).
+                    - lineItems: An array of objects, where each object represents a line item and has the following properties:
+                        - product: The product or service name (string).
+                        - quantity: The quantity of the item (number).
+                        - unitPrice: The price per unit (number).
+                        - totalPrice: The total price for this line item (number).
+                    If a field is not found, use null. For date fields, if the year is not present, use the current year.`;
 
-                const lineItemCount = Math.floor(Math.random() * 3) + 1;
-                const lineItems = [];
-                let subtotal = 0;
-                for (let i = 0; i < lineItemCount; i++) {
-                    const quantity = Math.floor(Math.random() * 10) + 1;
-                    const unitPrice = Math.round((Math.random() * 1000 + 50) * 100) / 100;
-                    const totalPrice = Math.round(quantity * unitPrice * 100) / 100;
-                    subtotal += totalPrice;
-                    lineItems.push({
-                        product: productNames[Math.floor(Math.random() * productNames.length)],
-                        quantity: quantity,
-                        unitPrice: unitPrice,
-                        totalPrice: totalPrice
-                    });
+                    const responseSchema = {
+                        type: "OBJECT",
+                        properties: {
+                            invoiceNumber: { "type": "STRING" },
+                            vendorName: { "type": "STRING" },
+                            invoiceDate: { "type": "STRING" },
+                            dueDate: { "type": "STRING" },
+                            totalAmount: { "type": "NUMBER" },
+                            currency: { "type": "STRING" },
+                            taxAmount: { "type": "NUMBER" },
+                            subtotal: { "type": "NUMBER" },
+                            lineItems: {
+                                "type": "ARRAY",
+                                "items": {
+                                    "type": "OBJECT",
+                                    "properties": {
+                                        "product": { "type": "STRING" },
+                                        "quantity": { "type": "NUMBER" },
+                                        "unitPrice": { "type": "NUMBER" },
+                                        "totalPrice": { "type": "NUMBER" }
+                                    },
+                                    "propertyOrdering": ["product", "quantity", "unitPrice", "totalPrice"]
+                                }
+                            }
+                        },
+                        "propertyOrdering": ["invoiceNumber", "vendorName", "invoiceDate", "dueDate", "totalAmount", "currency", "taxAmount", "subtotal", "lineItems"]
+                    };
+
+                    const apiKey = ""; // Canvas will provide this automatically
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                    const payload = {
+                        contents: [
+                            {
+                                role: "user",
+                                parts: [
+                                    { text: prompt },
+                                    {
+                                        inlineData: {
+                                            mimeType: file.type,
+                                            data: base64ImageData
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            responseSchema: responseSchema
+                        }
+                    };
+
+                    let response;
+                    let retries = 0;
+                    const maxRetries = 5;
+                    const initialDelay = 1000; // 1 second
+
+                    while (retries < maxRetries) {
+                        try {
+                            response = await fetch(apiUrl, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+
+                            if (response.status === 429) { // Too many requests
+                                const delay = initialDelay * Math.pow(2, retries);
+                                console.warn(`API call limit reached. Retrying in ${delay}ms...`);
+                                await new Promise(resolve => setTimeout(resolve, delay));
+                                retries++;
+                                continue; // Retry the loop
+                            }
+
+                            if (!response.ok) {
+                                throw new Error(`API response error: ${response.status} ${response.statusText}`);
+                            }
+
+                            const result = await response.json();
+                            if (result.candidates && result.candidates.length > 0 &&
+                                result.candidates[0].content && result.candidates[0].content.parts &&
+                                result.candidates[0].content.parts.length > 0) {
+                                const json = result.candidates[0].content.parts[0].text;
+                                return JSON.parse(json);
+                            } else {
+                                throw new Error('Unexpected API response structure or no content.');
+                            }
+                        } catch (error) {
+                            console.error('Fetch error:', error);
+                            const delay = initialDelay * Math.pow(2, retries);
+                            console.warn(`Fetch failed. Retrying in ${delay}ms...`);
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            retries++;
+                        }
+                    }
+
+                    throw new Error('Failed to extract data after multiple retries.');
+                } catch (error) {
+                    throw new Error(`Extraction failed: ${error.message}`);
                 }
-
-                subtotal = Math.round(subtotal * 100) / 100;
-                const taxRate = 0.08;
-                const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
-                const totalAmount = Math.round((subtotal + taxAmount) * 100) / 100;
-
-                return {
-                    invoiceNumber: randomInvoiceNumber,
-                    vendorName: randomVendor,
-                    invoiceDate: randomDate,
-                    dueDate: new Date(new Date(randomDate).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-                    totalAmount: totalAmount,
-                    currency: 'USD',
-                    taxAmount: taxAmount,
-                    subtotal: subtotal,
-                    lineItems: lineItems
-                };
             }
 
+            // The original generateDynamicInvoiceData function is now removed.
+            
             showResults = () => {
                 this.processingSection.classList.add('hidden');
                 this.resultsSection.classList.remove('hidden');

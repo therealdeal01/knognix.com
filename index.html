@@ -747,8 +747,8 @@
                 "pricing-enterprise-feature-1": "Uso ilimitado",
                 "pricing-enterprise-feature-2": "Gerente de cuenta dedicado",
                 "pricing-enterprise-feature-3": "Integraciones y modelos personalizados",
-                "pricing-enterprise-feature-4": "Despliegue en las instalaciones",
-                "pricing-enterprise-feature-5": "Soporte 24/7",
+                "pricing-enterprise-feature-4": "On-premise deployment",
+                "pricing-enterprise-feature-5": "24/7 priority support",
             }
         };
 
@@ -1148,15 +1148,9 @@
                         
                         this.updateFileStatusUI(fileData.id, 'processing');
                         
-                        // FIX: Generate mock data based on the file name to simulate different extractions
                         let result;
-                        if (fileData.name.includes('Novembre')) {
-                             result = this.generateNovembreInvoiceData();
-                        } else if (fileData.name.includes('Octobre')) {
-                             result = this.generateOctobreInvoiceData();
-                        } else {
-                            result = this.generateMockInvoiceData();
-                        }
+                        // Now using a single, dynamic mock data generator for all files.
+                        result = this.generateDynamicInvoiceData(fileData.name);
                         
                         await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call latency
                         
@@ -1222,84 +1216,45 @@
                 console.warn('NOTE: Using mock data for invoice processing as the API endpoint is unavailable.');
                 return new Promise((resolve) => {
                     setTimeout(() => {
-                        resolve(this.generateMockInvoiceData());
+                        resolve(this.generateDynamicInvoiceData('uploaded_image.jpg'));
                     }, 1500); // Simulate network latency
                 });
             }
 
-            generateNovembreInvoiceData() {
-                const lineItems = [
-                    { product: 'MP2739 A90941 Stats', quantity: '680.68 Min.', unitPrice: 1.50, totalPrice: 1021.03 }
-                ];
+            generateDynamicInvoiceData(fileName) {
+                const vendorNames = ['Acme Corp', 'Global Logistics', 'Tech Innovators', 'Creative Solutions'];
+                const productNames = ['Consulting Services', 'Software License', 'Web Hosting', 'IT Support', 'Graphic Design'];
                 
-                const subtotal = lineItems.reduce((sum, item) => sum + item.totalPrice, 0);
-                const totalAmount = 1021.03;
-                const taxAmount = 0;
+                const randomVendor = vendorNames[Math.floor(Math.random() * vendorNames.length)];
+                const randomInvoiceNumber = `INV-${Math.floor(Math.random() * 1000000)}`;
+                const randomDate = new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000).toLocaleDateString();
+
+                const lineItemCount = Math.floor(Math.random() * 3) + 1;
+                const lineItems = [];
+                let subtotal = 0;
+                for (let i = 0; i < lineItemCount; i++) {
+                    const quantity = Math.floor(Math.random() * 10) + 1;
+                    const unitPrice = Math.round((Math.random() * 1000 + 50) * 100) / 100;
+                    const totalPrice = Math.round(quantity * unitPrice * 100) / 100;
+                    subtotal += totalPrice;
+                    lineItems.push({
+                        product: productNames[Math.floor(Math.random() * productNames.length)],
+                        quantity: quantity,
+                        unitPrice: unitPrice,
+                        totalPrice: totalPrice
+                    });
+                }
+
+                subtotal = Math.round(subtotal * 100) / 100;
+                const taxRate = 0.08;
+                const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
+                const totalAmount = Math.round((subtotal + taxAmount) * 100) / 100;
 
                 return {
-                    invoiceNumber: 'SG001',
-                    vendorName: 'Eric Gakuba Rwanyonga',
-                    invoiceDate: '5/11/24',
-                    dueDate: 'N/A',
-                    totalAmount: totalAmount,
-                    currency: 'EUR',
-                    taxAmount: taxAmount,
-                    subtotal: subtotal,
-                    lineItems: lineItems
-                };
-            }
-
-            generateOctobreInvoiceData() {
-                const lineItems = [
-                    { product: 'Monthly guide prestation by: Eric Gakuba', quantity: 1, unitPrice: 610.00, totalPrice: 610.00 },
-                    { product: '01-Paris: Private Custom Walking Tour with a Local Guide - BR-1132827611: Paris', quantity: 2, unitPrice: 20.00, totalPrice: 40.00 },
-                    { product: '01- Paris: Private Custom Walking tour with A Local Guide - GYGVN3735869: Paris', quantity: 4, unitPrice: 30.00, totalPrice: 120.00 },
-                    { product: '01-Paris: Private Custom Walking tour with A Local Guide - GYG997Z96H5G: Paris', quantity: 4, unitPrice: 30.00, totalPrice: 120.00 },
-                    { product: '01- Discovering Le Marais: Guided Walking Tour of Paris ( small tour) - GYGG46Q2MG7Y: Paris', quantity: 2, unitPrice: 30.00, totalPrice: 60.00 },
-                    { product: '01-Paris: Montmartre Walking Tour - GYGRFRL9QWKL: Paris', quantity: 2, unitPrice: 30.00, totalPrice: 60.00 },
-                    { product: '01-Paris: Street Art Walking Tour With A Guide - GYG83YB5798Q: Paris', quantity: 3, unitPrice: 30.00, totalPrice: 90.00 },
-                    { product: '01-Paris: Private Custom Walking tour with A Local Guide - GYG6H88V6NHG: Paris', quantity: 4, unitPrice: 0, totalPrice: 0 },
-                    { product: 'Compensation', quantity: 1, unitPrice: 120.00, totalPrice: 120.00 }
-                ];
-                
-                const subtotal = lineItems.reduce((sum, item) => sum + item.totalPrice, 0);
-                const totalAmount = 610.00;
-                const taxAmount = 0;
-
-                return {
-                    invoiceNumber: '4652',
-                    vendorName: 'Eric Gakuba',
-                    invoiceDate: '01/10/2024-31/10/2024',
-                    dueDate: 'N/A',
-                    totalAmount: totalAmount,
-                    currency: '€',
-                    taxAmount: taxAmount,
-                    subtotal: subtotal,
-                    lineItems: lineItems
-                };
-            }
-
-            generateMockInvoiceData() {
-                // Hardcoded data from the PDF-Invoice.jpg
-                const lineItems = [
-                    { product: 'Laboratory services', quantity: 1, unitPrice: 18861.00, totalPrice: 18861.00 },
-                    { product: 'Diagnostic/therapeutic imaging', quantity: 1, unitPrice: 95727.00, totalPrice: 95727.00 },
-                    { product: 'Pharmacy', quantity: 1, unitPrice: 33719.00, totalPrice: 33719.00 },
-                    { product: 'Special care unit', quantity: 1, unitPrice: 9342.00, totalPrice: 9342.00 },
-                    { product: 'supplies', quantity: 1, unitPrice: 33798.00, totalPrice: 33798.00 },
-                    { product: 'Emergency Room', quantity: 1, unitPrice: 7648.00, totalPrice: 7648.00 }
-                ];
-                
-                // Calculate totals from line items to ensure consistency
-                const subtotal = lineItems.reduce((sum, item) => sum + item.totalPrice, 0);
-                const taxAmount = 0; // The invoice doesn't show a tax line, so we assume 0
-                const totalAmount = subtotal;
-
-                return {
-                    invoiceNumber: '3',
-                    vendorName: 'City hospitals',
-                    invoiceDate: 'Jul 3, 2023',
-                    dueDate: 'Jul 10, 2023',
+                    invoiceNumber: randomInvoiceNumber,
+                    vendorName: randomVendor,
+                    invoiceDate: randomDate,
+                    dueDate: new Date(new Date(randomDate).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
                     totalAmount: totalAmount,
                     currency: 'USD',
                     taxAmount: taxAmount,

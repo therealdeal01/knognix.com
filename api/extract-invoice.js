@@ -72,26 +72,46 @@ Important rules:
       }
     };
     
-    // Use the older, more compatible `generateContent` signature
-    const result = await model.generateContent([prompt, imagePart]);
-    const responseText = result.response.text();
+    // Generate content from the model
+    // The generationConfig and responseSchema ensure a structured JSON response.
+    const result = await model.generateContent({
+        contents: [{
+            parts: [
+                { text: prompt },
+                imagePart
+            ]
+        }],
+        generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: "OBJECT",
+                properties: {
+                    "invoiceNumber": { "type": "STRING", "nullable": true },
+                    "vendorName": { "type": "STRING", "nullable": true },
+                    "invoiceDate": { "type": "STRING", "nullable": true },
+                    "dueDate": { "type": "STRING", "nullable": true },
+                    "totalAmount": { "type": "NUMBER", "nullable": true },
+                    "currency": { "type": "STRING", "nullable": true },
+                    "lineItems": {
+                        "type": "ARRAY",
+                        "items": {
+                            "type": "OBJECT",
+                            "properties": {
+                                "product": { "type": "STRING", "nullable": true },
+                                "quantity": { "type": "NUMBER", "nullable": true },
+                                "unitPrice": { "type": "NUMBER", "nullable": true },
+                                "totalPrice": { "type": "NUMBER", "nullable": true }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
 
-    let extractedData;
-    try {
-      extractedData = JSON.parse(responseText);
-    } catch (parseError) {
-      // If parsing fails, try to clean the text
-      const cleanedText = responseText.replace(/```json\n?/, '').replace(/\n?```$/, '').trim();
-      try {
-        extractedData = JSON.parse(cleanedText);
-      } catch (finalParseError) {
-        console.error('Final JSON parsing failed:', finalParseError);
-        return response.status(500).json({
-          error: 'Failed to parse AI response.',
-          rawResponse: responseText
-        });
-      }
-    }
+    // The response is already a parsed JSON object due to the generationConfig
+    // We can now safely access the content without manual parsing.
+    const extractedData = result.candidates[0].content.parts[0].text;
 
     return response.status(200).json(extractedData);
 

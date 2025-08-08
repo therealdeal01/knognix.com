@@ -72,8 +72,7 @@ Important rules:
       }
     };
     
-    // Generate content from the model
-    // The generationConfig and responseSchema ensure a structured JSON response.
+    // Generate content from the model with a structured schema
     const result = await model.generateContent({
         contents: [{
             parts: [
@@ -109,19 +108,28 @@ Important rules:
         }
     });
 
-    // We now add a safety check to prevent a crash if the API response is malformed.
+    // Add a more robust safety check to prevent a crash if the API response is malformed.
+    // We now check for `result.candidates` and `result.candidates[0].content` before accessing properties.
     const extractedDataPart = result?.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!extractedDataPart) {
       console.error('Unexpected API response structure:', JSON.stringify(result, null, 2));
       return response.status(500).json({
         error: 'Failed to process AI response.',
-        details: 'Unexpected or empty response from the AI model.'
+        details: 'The AI model returned an unexpected or empty response.'
       });
     }
 
-    const extractedData = JSON.parse(extractedDataPart);
-    return response.status(200).json(extractedData);
+    try {
+      const extractedData = JSON.parse(extractedDataPart);
+      return response.status(200).json(extractedData);
+    } catch (parseError) {
+      console.error('JSON parsing error after AI response:', parseError);
+      return response.status(500).json({
+        error: 'Failed to parse AI response.',
+        details: 'The AI returned a response that could not be parsed as valid JSON.'
+      });
+    }
 
   } catch (error) {
     console.error('Error in serverless function:', error);

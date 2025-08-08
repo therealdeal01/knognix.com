@@ -1,3 +1,6 @@
+// This file MUST be placed in the `api` directory of your project
+// to correctly handle POST requests at the `/api/extract-invoice` endpoint.
+
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 module.exports = async (request, response) => {
@@ -36,7 +39,7 @@ module.exports = async (request, response) => {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    // Define the prompt for the AI model, matching the frontend's expected format
+    // Define the prompt for the AI model
     const prompt = `You are an expert invoice data extraction system. Analyze this invoice image and extract the following information in JSON format:
 
 {
@@ -48,10 +51,10 @@ module.exports = async (request, response) => {
   "currency": "string | null",
   "lineItems": [
     {
-      "product": "string",
-      "quantity": "number",
-      "unitPrice": "number",
-      "totalPrice": "number"
+      "product": "string | null",
+      "quantity": "number | null",
+      "unitPrice": "number | null",
+      "totalPrice": "number | null"
     }
   ]
 }
@@ -64,51 +67,31 @@ Important rules:
 
     const imagePart = {
       inlineData: {
-        // The frontend now sends base64 data without the prefix, so we use it directly.
         data: imageData,
         mimeType: mimeType
       }
     };
+    
+    // Use the older, more compatible `generateContent` signature
+    const result = await model.generateContent([prompt, imagePart]);
+    const responseText = result.response.text();
 
-    // Generate content from the model
-    // The generationConfig and responseSchema ensure a structured JSON response.
-    const result = await model.generateContent({
-        contents: [{
-            parts: [
-                { text: prompt },
-                imagePart
-            ]
-        }],
-        generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: "OBJECT",
-                properties: {
-                    "invoiceNumber": { "type": "STRING", "nullable": true },
-                    "vendorName": { "type": "STRING", "nullable": true },
-                    "invoiceDate": { "type": "STRING", "nullable": true },
-                    "dueDate": { "type": "STRING", "nullable": true },
-                    "totalAmount": { "type": "NUMBER", "nullable": true },
-                    "currency": { "type": "STRING", "nullable": true },
-                    "lineItems": {
-                        "type": "ARRAY",
-                        "items": {
-                            "type": "OBJECT",
-                            "properties": {
-                                "product": { "type": "STRING", "nullable": true },
-                                "quantity": { "type": "NUMBER", "nullable": true },
-                                "unitPrice": { "type": "NUMBER", "nullable": true },
-                                "totalPrice": { "type": "NUMBER", "nullable": true }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    });
-
-    // The response is already a parsed JSON object due to the generationConfig
-    const extractedData = JSON.parse(result.candidates[0].content.parts[0].text);
+    let extractedData;
+    try {
+      extractedData = JSON.parse(responseText);
+    } catch (parseError) {
+      // If parsing fails, try to clean the text
+      const cleanedText = responseText.replace(/```json\n?/, '').replace(/\n?```$/, '').trim();
+      try {
+        extractedData = JSON.parse(cleanedText);
+      } catch (finalParseError) {
+        console.error('Final JSON parsing failed:', finalParseError);
+        return response.status(500).json({
+          error: 'Failed to parse AI response.',
+          rawResponse: responseText
+        });
+      }
+    }
 
     return response.status(200).json(extractedData);
 

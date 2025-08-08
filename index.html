@@ -248,7 +248,7 @@
                 <a href="#solutions-section" class="block py-2 px-4 hover:bg-gray-800 rounded-lg" data-i18n="nav-services">Services</a>
                 <a href="#dynamic-sections" class="block py-2 px-4 hover:bg-gray-800 rounded-lg" data-i18n="nav-platform">Platform</a>
                 <a href="#pricing" class="block py-2 px-4 hover:bg-gray-800 rounded-lg" data-i18n="nav-pricing">Pricing</a>
-                <a href="#mvp-section" class="block bg-white text-gray-900 text-center font-semibold py-2 px-6 rounded-md mt-2" data-i18n="nav-demo">Try the MVP</a>
+                <a href="#mvp-section" class="block bg-white text-gray-900 text-center font-semibold py-2 px-6 rounded-md mt-2" data-i18n="nav-demo">Try the MVP">
             </div>
         </div>
     </header>
@@ -744,6 +744,8 @@
                 "service-analytics-text": "Utilisez l'apprentissage automatique pour l'analyse prédictive et l'aide à la décision, comme la prédiction de l'attrition et la détection d'anomalies.",
                 "service-saas-title": "Intégration d'IA pour les plateformes SaaS",
                 "service-saas-text": "Intégrez des fonctionnalités d'IA comme la recherche intelligente, la conversion de la voix en texte et la synthèse de contenu dans vos outils SaaS existants.",
+                "service-workflows-title": "Outils d'automatisation des flux de travail",
+                "service-workflows-text": "Créez ou intégrez des outils sans code/à faible code pour un déploiement rapide, et proposez des plugins IA personnalisés.",
                 "service-support-title": "Solutions de support client IA",
                 "service-support-text": "Déployez des agents IA multilingues et des systèmes hybrides humain/IA, y compris des robots vocaux optionnels avec des LLM.",
                 "service-compliance-title": "Conseil en conformité et éthique IA",
@@ -1242,102 +1244,43 @@
                 this.resultsSection.classList.add('hidden');
                 this.clearResultsTable();
 
-                const initialFiles = [...this.files];
-                for (let i = 0; i < initialFiles.length; i++) {
-                    const fileData = initialFiles[i];
-                    
-                    try {
-                        // Update processing status with the current file name, using translation
-                        this.updateProcessingStatus(this.getTranslation('processing-file', { fileName: fileData.name }));
-                        this.updateOverallProgress(((i + 1) / initialFiles.length) * 100);
-                        
-                        this.updateFileStatusUI(fileData.id, 'processing');
-                        
-                        // Use the new API extraction method to get real data
-                        const result = await this.extractInvoiceData(fileData.file);
-                        
-                        fileData.result = result;
-                        fileData.status = 'completed';
-                        
-                        this.results.push({
-                            fileId: fileData.id,
-                            fileName: fileData.name,
-                            ...result
-                        });
-                        
-                        this.updateFileStatusUI(fileData.id, 'completed');
-                        
-                    } catch (error) {
-                        console.error(`Error processing ${fileData.name}:`, error);
-                        fileData.status = 'error';
-                        fileData.result = { error: error.message };
-                        this.updateFileStatusUI(fileData.id, 'error');
-                        this.results.push({
-                            fileId: fileData.id,
-                            fileName: fileData.name,
-                            vendorName: 'N/A',
-                            invoiceDate: 'N/A',
-                            totalAmount: 'N/A',
-                            error: error.message
-                        });
-                    }
-                }
+                // Prepare files for the API call
+                const filesToProcess = await Promise.all(this.files.map(async (fileData) => {
+                  const fileContent = await this.fileToBase64(fileData.file);
+                  return {
+                    imageData: fileContent,
+                    mimeType: fileData.file.type
+                  };
+                }));
 
-                this.updateProcessingStatus(this.getTranslation('processing-completed'));
-                this.updateOverallProgress(100);
-                
-                setTimeout(() => {
-                    this.showResults();
-                }, 1000);
-                
-                this.isProcessing = false;
-            }
+                try {
+                  const response = await this.extractInvoiceData(filesToProcess);
+                  this.isProcessing = false;
+                  
+                  if (response && response.invoices) {
+                    this.results = response.invoices.map((result, index) => ({
+                      fileId: this.files[index].id,
+                      fileName: this.files[index].name,
+                      ...result
+                    }));
+                  }
+                  
+                  this.showResults();
 
-            // Helper function to dynamically get translated text with placeholders
-            getTranslation = (key, replacements = {}) => {
-                const lang = localStorage.getItem('kognix-lang') || 'en';
-                let text = translations[lang]?.[key] || translations['en'][key] || key;
-                for (const [placeholder, value] of Object.entries(replacements)) {
-                    text = text.replace(`{${placeholder}}`, value);
-                }
-                return text;
-            };
-
-            // Fixed method using arrow function to maintain `this` context
-            updateFileStatusUI = (fileId, status) => {
-                const fileItem = this.filesContainer.querySelector(`[data-file-id="${fileId}"]`);
-                if (fileItem) {
-                    const statusSpan = fileItem.querySelector('.file-status');
-                    if(statusSpan) {
-                      statusSpan.textContent = this.getStatusText(status);
-                      statusSpan.className = `file-status file-status-${status}`;
-                    }
-                }
-            }
-
-            // Fixed method using arrow function to maintain `this` context
-            updateProcessingStatus = (message) => {
-                if(this.processingStatus) {
-                  this.processingStatus.textContent = message;
-                }
-            }
-
-            updateOverallProgress = (percentage) => {
-                if(this.overallProgress) {
-                  this.overallProgress.style.width = `${percentage}%`;
+                } catch (error) {
+                  this.isProcessing = false;
+                  console.error('Error in processing documents:', error);
+                  this.showNotification(`Error processing documents: ${error.message}`, 'error');
+                  this.resetToUpload();
                 }
             }
             
-            // This method is now updated to call the backend endpoint
-            async extractInvoiceData(file) {
-                // IMPORTANT: Replace this URL with your actual backend API endpoint
+            // This is the updated method that sends an array of files
+            async extractInvoiceData(filesToProcess) {
                 const apiUrl = '/api/extract-invoice';
                 
-                const fileContent = await this.fileToBase64(file);
-                
                 const payload = {
-                    imageData: fileContent,
-                    mimeType: file.type
+                    files: filesToProcess
                 };
                 
                 try {
@@ -1357,21 +1300,30 @@
                     throw new Error(`Extraction failed: ${error.message}`);
                 }
             }
-            
+
+            // Helper function to dynamically get translated text with placeholders
+            getTranslation = (key, replacements = {}) => {
+                const lang = localStorage.getItem('kognix-lang') || 'en';
+                let text = translations[lang]?.[key] || translations['en'][key] || key;
+                for (const [placeholder, value] of Object.entries(replacements)) {
+                    text = text.replace(`{${placeholder}}`, value);
+                }
+                return text;
+            };
+
             // New method to convert file to Base64, required for the API call
             async fileToBase64(file) {
                 return new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.readAsDataURL(file);
                     reader.onload = () => {
-                        // The result includes the mime type prefix, which we need to remove
                         const base64 = reader.result.split(',')[1];
                         resolve(base64);
                     };
                     reader.onerror = error => reject(error);
                 });
             }
-            
+
             showResults = () => {
                 this.processingSection.classList.add('hidden');
                 this.resultsSection.classList.remove('hidden');

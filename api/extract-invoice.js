@@ -63,7 +63,8 @@ Important rules:
 1. Return ONLY valid JSON, with no additional text or markdown formatting.
 2. If a field is not found, use null for strings and numbers.
 3. Parse all monetary values as numbers.
-4. Ensure dates are in YYYY-MM-DD format.`;
+4. Ensure dates are in YYYY-MM-DD format.
+5. Extract only the invoice details, nothing else.`;
 
     const imagePart = {
       inlineData: {
@@ -160,4 +161,3 @@ Important rules:
     });
   }
 };
-

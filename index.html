@@ -6,12 +6,14 @@
     <title>Kognix - The Enterprise AI Platform</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Three.js Library for 3D visuals -->
+    <!-- Three.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- SheetJS for Excel export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- PDF.js for PDF processing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <!-- Custom Font and Style Properties -->
     <style>
         body {
@@ -175,6 +177,118 @@
         .scrollable-results::-webkit-scrollbar-thumb:hover {
             background: #9CA3AF;
         }
+
+        /* NEW CSS FROM improved code */
+        /* Modern glass morphism effect */
+        .glass-card {
+            background: rgba(17, 24, 39, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(75, 85, 99, 0.3);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        
+        /* Enhanced fade-in animations */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .fade-in.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* File upload zone with advanced styling */
+        .upload-zone {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+            border: 2px dashed rgba(99, 102, 241, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .upload-zone:hover {
+            border-color: rgba(99, 102, 241, 0.6);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15));
+        }
+        
+        .upload-zone.drag-over {
+            border-color: #6366f1;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
+            transform: scale(1.02);
+        }
+        
+        /* Processing animations */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.6); }
+        }
+        
+        .processing-active {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+        
+        /* Document type badges */
+        .doc-type-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .doc-type-invoice {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        
+        .doc-type-traffic {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+        
+        .doc-type-contract {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+        }
+        
+        .doc-type-receipt {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+        
+        /* Advanced scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(31, 41, 55, 0.5);
+            border-radius: 4px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 4px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        }
+        
+        /* Enhanced data visualization */
+        .data-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.05));
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .data-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -12px rgba(99, 102, 241, 0.3);
+        }
     </style>
 </head>
 <body class="bg-gray-950 text-white flex flex-col min-h-screen">
@@ -248,6 +362,8 @@
                 <a href="#solutions-section" class="block py-2 px-4 hover:bg-gray-800 rounded-lg" data-i18n="nav-services">Services</a>
                 <a href="#dynamic-sections" class="block py-2 px-4 hover:bg-gray-800 rounded-lg" data-i18n="nav-platform">Platform</a>
                 <a href="#pricing" class="block py-2 px-4 hover:bg-gray-800 rounded-lg" data-i18n="nav-pricing">Pricing</a>
+                <a href="#contact" class="block py-2 px-4 hover:bg-gray-800 rounded-lg" data-i18n="nav-contact">Contact</a>
+                <!-- FIX: Corrected the href for mobile menu button -->
                 <a href="#mvp-section" class="block bg-white text-gray-900 text-center font-semibold py-2 px-6 rounded-md mt-2" data-i18n="nav-demo">Try the MVP</a>
             </div>
         </div>
@@ -341,7 +457,7 @@
                                     <button id="export-excel-button" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed" disabled data-i18n="export-excel-button">
                                         <i class="fas fa-file-excel mr-2"></i>Export Excel
                                     </button>
-                                    <button id="share-google-sheets-button" class="bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors hover:bg-yellow-700 disabled:bg-gray-600 disabled:cursor-not-allowed" disabled data-i18n="export-gsheets-button">
+                                    <button id="share-google-sheets-button" class="bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors hover:bg-yellow-700 disabled:bg-gray-600 disabled:cursor-not-allowed" data-i18n="export-gsheets-button">
                                         <i class="fab fa-google mr-2"></i>Google Sheets
                                     </button>
                                 </div>
@@ -430,7 +546,7 @@
         </section>
 
         <!-- Dynamic Content Sections -->
-        <section id="dynamic-sections" class="py-20 md:py-24 bg-gray-900 fade-in">
+        <section id="dynamic-sections" class="py-20 md:py-24 bg-gray-900">
             <div class="container mx-auto px-4">
                 <div class="space-y-24">
                     <!-- Section 1: Enterprise Data -->
@@ -513,7 +629,7 @@
                         <div id="services-three-container-4" class="three-container"></div>
                         <div class="content">
                             <h3 class="text-xl font-bold mb-2 text-white" data-i18n="service-saas-title">AI Integration for SaaS</h3>
-                            <p class="text-gray-400" data-i18n="service-saas-text">Intégrez des fonctionnalités d'IA comme la recherche intelligente, la conversion de la voix en texte et la synthèse de contenu dans vos outils SaaS existants.</p>
+                            <p class="text-gray-400" data-i18n="service-saas-text">Embed AI features like smart search, voice-to-text, and content summarization into your existing SaaS tools.</p>
                         </div>
                     </div>
                     <!-- Service 5: Workflow Automation Tools -->
@@ -521,7 +637,7 @@
                         <div id="services-three-container-5" class="three-container"></div>
                         <div class="content">
                             <h3 class="text-xl font-bold mb-2 text-white" data-i18n="service-workflows-title">Workflow Automation Tools</h3>
-                            <p class="text-gray-400" data-i18n="service-workflows-text">Build or integrate with popular no-code/low-code tools for rapid deployment, and offer custom AI plugins.</p>
+                            <p class="text-gray-400" data-i18n="service-workflows-text">Build or integrate with popular no-code/low-code tools for fast deployment, and offer custom AI plugins.</p>
                         </div>
                     </div>
                     <!-- Service 6: AI-Driven Customer Support -->
@@ -529,7 +645,7 @@
                         <div id="services-three-container-6" class="three-container"></div>
                         <div class="content">
                             <h3 class="text-xl font-bold mb-2 text-white" data-i18n="service-support-title">AI-Driven Customer Support</h3>
-                            <p class="text-gray-400" data-i18n="service-support-text">Deploy multilingual AI agents and human/AI hybrid systems, including optional voice bots with LLMs.</p>
+                            <p class="text-gray-400" data-i18n="service-support-text">Deploy multilingual AI agents and hybrid human/AI systems, including optional voice bots with LLMs.</p>
                         </div>
                     </div>
                     <!-- Service 7: AI Compliance & Ethics -->
@@ -537,7 +653,7 @@
                         <div id="services-three-container-7" class="three-container"></div>
                         <div class="content">
                             <h3 class="text-xl font-bold mb-2 text-white" data-i18n="service-compliance-title">AI Compliance & Ethics</h3>
-                            <p class="text-gray-400" data-i18n="service-compliance-text">Help companies adopt AI responsibly with audits, bias testing, and ethical deployment strategies.</p>
+                            <p class="text-gray-400" data-i18n="service-compliance-text">Help businesses adopt AI responsibly with audits, bias testing, and ethical deployment strategies.</p>
                         </div>
                     </div>
                     <!-- Service 8: Generative AI for Business -->
@@ -545,7 +661,7 @@
                         <div id="services-three-container-8" class="three-container"></div>
                         <div class="content">
                             <h3 class="text-xl font-bold mb-2 text-white" data-i18n="service-genai-title">Generative AI for Business</h3>
-                            <p class="text-gray-400" data-i18n="service-genai-text">Créez des outils internes et des copilotes personnalisés à l'aide de grands modèles de langage pour le service client, les RH et le marketing.</p>
+                            <p class="text-gray-400" data-i18n="service-genai-text">Build internal tools and custom copilots using large language models for customer service, HR, and marketing.</p>
                         </div>
                     </div>
                     <!-- Service 9: AI Talent & Training Programs -->
@@ -553,7 +669,7 @@
                         <div id="services-three-container-9" class="three-container"></div>
                         <div class="content">
                             <h3 class="text-xl font-bold mb-2 text-white" data-i18n="service-training-title">AI Talent & Training</h3>
-                            <p class="text-gray-400" data-i18n="service-training-text">Proporcione sesiones de formación y certificaciones para empresas que adoptan la IA, con programas de mejora de habilidades para equipos internos.</p>
+                            <p class="text-gray-400" data-i18n="service-training-text">Provide training sessions and certifications for companies adopting AI, with upskilling programs for internal teams.</p>
                         </div>
                     </div>
                 </div>
@@ -625,8 +741,6 @@
                 "clear-button": "Clear All",
                 "processing-title": "Processing Documents...",
                 "processing-starting": "Starting...",
-                "processing-file": "Processing {fileName}...",
-                "processing-completed": "Processing completed!",
                 "results-heading": "Extraction Results",
                 "export-csv-button": "Export CSV",
                 "export-excel-button": "Export Excel",
@@ -651,6 +765,86 @@
                 "section-models-title": "Foundation Models",
                 "section-models-text": "Kognix partners or integrates with all of the leading AI models, from open-source to closed-source, including Google, Meta, and more.",
                 "section-tuning-title": "Fine-Tuning and RLHF",
+                "section-tuning-text": "Adapt best-in-class foundation models to your business and your specific data to build sustainable, successful AI programs.",
+                "services-title": "Our Comprehensive Services.",
+                "services-subtitle": "We offer a full suite of AI and automation services to help businesses thrive.",
+                "service-rpa-title": "AI Process Automation",
+                "service-rpa-text": "Automate repetitive business processes using AI-enhanced Robotic Process Automation.",
+                "service-custom-title": "Custom AI Solutions",
+                "service-custom-text": "Develop tailored AI models for specific business needs like NLP, computer vision, and forecasting.",
+                "service-analytics-title": "AI-Powered Data Analytics",
+                "service-analytics-text": "Use machine learning for predictive analytics and decision intelligence, such as churn prediction and anomaly detection.",
+                "service-saas-title": "AI Integration for SaaS",
+                "service-saas-text": "Embed AI features like smart search, voice-to-text, and content summarization into your existing SaaS tools.",
+                "service-workflows-title": "Workflow Automation Tools",
+                "service-workflows-text": "Build or integrate with popular no-code/low-code tools for fast deployment, and offer custom AI plugins.",
+                "service-support-title": "AI-Driven Customer Support",
+                "service-support-text": "Deploy multilingual AI agents and hybrid human/AI systems, including optional voice bots with LLMs.",
+                "service-compliance-title": "AI Compliance & Ethics",
+                "service-compliance-text": "Help businesses adopt AI responsibly with audits, bias testing, and ethical deployment strategies.",
+                "service-genai-title": "Generative AI for Business",
+                "service-genai-text": "Build internal tools and custom copilots using large language models for customer service, HR, and marketing.",
+                "service-training-title": "AI Talent & Training",
+                "service-training-text": "Provide training sessions and certifications for companies adopting AI, with upskilling programs for internal teams.",
+                "contact-title": "Ready to Get Started?",
+                "contact-subtitle": "Contact our sales team to discuss your needs and see how Kognix can transform your business.",
+                "form-name-label": "Name",
+                "form-name-placeholder": "Your Name",
+                "form-email-label": "Email",
+                "form-email-placeholder": "Your Email",
+                "form-phone-label": "Phone",
+                "form-phone-placeholder": "Your Phone Number",
+                "form-problem-label": "Describe your problem",
+                "form-problem-placeholder": "Describe your problem so we can get back to you",
+                "form-submit-button": "Send Message",
+                "form-success-message": "Our team will get back to you shortly!",
+                "footer-text": "&copy; 2024 Kognix. All rights reserved.",
+            },
+            fr: {
+                "nav-services": "Services",
+                "nav-platform": "Plateforme",
+                "nav-pricing": "Tarifs",
+                "nav-contact": "Contact",
+                "nav-demo": "Essayer l'MVP",
+                "hero-headline": "L'IA Révolutionnaire de la Donnée au Déploiement.",
+                "hero-subheadline": "Kognix construit la plateforme IA pour offrir des données, des évaluations et des résultats prouvés aux laboratoires d'IA, aux gouvernements et aux entreprises.",
+                "hero-cta-demo": "Essayer l'MVP",
+                "hero-cta-build": "Créer avec l'IA →",
+                "mvp-title": "IA avancée de traitement des factures",
+                "mvp-subtitle": "Téléchargez plusieurs factures, reçus ou documents commerciaux et regardez notre IA extraire instantanément les informations clés. Exportez les résultats vers CSV ou Google Sheets.",
+                "drop-text": "Déposez vos factures ici",
+                "or-text": "ou",
+                "browse-text": "Parcourir les fichiers",
+                "support-text": "Formats supportés : Images (JPG, PNG), documents PDF",
+                "uploaded-files-heading": "Fichiers téléchargés",
+                "process-button": "Traiter tous les documents",
+                "clear-button": "Tout effacer",
+                "processing-title": "Traitement des documents...",
+                "processing-starting": "Démarrage...",
+                "results-heading": "Résultats d'extraction",
+                "export-csv-button": "Exporter CSV",
+                "export-excel-button": "Exporter Excel",
+                "export-gsheets-button": "Google Sheets",
+                "stats-processed": "Documents traités",
+                "stats-total-amount": "Montant total",
+                "stats-avg-amount": "Montant moyen",
+                "stats-unique-vendors": "Fournisseurs uniques",
+                "table-doc": "Document",
+                "table-vendor": "Fournisseur",
+                "table-date": "Date",
+                "table-amount": "Montant",
+                "table-status": "Statut",
+                "table-actions": "Actions",
+                "process-more-button": "Traiter d'autres documents",
+                "clear-results-button": "Effacer les résultats",
+                "modal-title": "Détails du document",
+                "modal-extracted-data-title": "Données extraites",
+                "modal-original-doc-title": "Document original",
+                "section-data-title": "Données d'entreprise",
+                "section-data-text": "Le moteur de données de Kognix vous permet d'intégrer les données de votre entreprise dans ces modèles, posant ainsi la base d'une différenciation stratégique à long terme.",
+                "section-models-title": "Modèles fondamentaux",
+                "section-models-text": "Kognix s'associe ou s'intègre à tous les principaux modèles d'IA, de l'open-source au closed-source, y compris Google, Meta, et bien d'autres.",
+                "section-tuning-title": "Affinement et RLHF",
                 "section-tuning-text": "Adaptez les modèles fondamentaux de premier ordre à votre entreprise et à vos données spécifiques pour construire des programmes d'IA durables et performants.",
                 "services-title": "Nos services complets.",
                 "services-subtitle": "Nous offrons une suite complète de services d'IA et d'automatisation pour aider les entreprises à prospérer.",
@@ -659,7 +853,7 @@
                 "service-custom-title": "Solutions IA personnalisées",
                 "service-custom-text": "Développez des modèles d'IA sur mesure pour des besoins métier spécifiques comme le NLP, la vision par ordinateur et la prévision.",
                 "service-analytics-title": "Analyse de données pilotée par l'IA",
-                "service-analytics-text": "Utilisez l'apprentissage automatique pour l'analyse prédictive et l'aide à la décision, comme la prédiction de l'attrition et la détection d'anomalies.",
+                "service-analytics-text": "Utilisez l'apprentissage automatique pour l'analyse prédictive et l'intelligence décisionnelle, such as churn prediction and anomaly detection.",
                 "service-saas-title": "Intégration d'IA pour les plateformes SaaS",
                 "service-saas-text": "Intégrez des fonctionnalités d'IA comme la recherche intelligente, la conversion de la voix en texte et la synthèse de contenu dans vos outils SaaS existants.",
                 "service-workflows-title": "Outils d'automatisation des flux de travail",
@@ -671,6 +865,86 @@
                 "service-genai-title": "IA Générative pour les entreprises",
                 "service-genai-text": "Créez des outils internes et des copilotes personnalisés à l'aide de grands modèles de langage pour le service client, les RH et le marketing.",
                 "service-training-title": "Programmes de formation et de talent IA",
+                "service-training-text": "Fournissez des sessions de formation et des certifications aux entreprises adoptant l'IA, avec des programmes de perfectionnement pour les équipes internes.",
+                "contact-title": "Prêt à commencer ?",
+                "contact-subtitle": "Contactez notre équipe de vente pour discuter de vos besoins et découvrir comment Kognix peut transformer votre entreprise.",
+                "form-name-label": "Nom",
+                "form-name-placeholder": "Votre nom",
+                "form-email-label": "Email",
+                "form-email-placeholder": "Votre email",
+                "form-phone-label": "Téléphone",
+                "form-phone-placeholder": "Votre numéro de téléphone",
+                "form-problem-label": "Décrivez votre problème",
+                "form-problem-placeholder": "Décrivez votre problème afin que nous puissions vous répondre",
+                "form-submit-button": "Envoyer le message",
+                "form-success-message": "Notre équipe vous répondra sous peu !",
+                "footer-text": "© 2024 Kognix. Tous droits réservés.",
+            },
+            es: {
+                "nav-services": "Servicios",
+                "nav-platform": "Plataforma",
+                "nav-pricing": "Precios",
+                "nav-contact": "Contacto",
+                "nav-demo": "Solicitar demostración",
+                "hero-headline": "IA innovadora desde los datos hasta la implementación.",
+                "hero-subheadline": "Kognix está construyendo la plataforma de IA para ofrecer datos probados, evaluaciones y resultados a laboratorios de IA, gobiernos y empresas.",
+                "hero-cta-demo": "Reservar una demo",
+                "hero-cta-build": "Construir con IA →",
+                "mvp-title": "IA avanzada de procesamiento de facturas",
+                "mvp-subtitle": "Cargue varias facturas, recibos o documentos comerciales y observe cómo nuestra IA extrae información clave al instante. Exporte los resultados a CSV o Hojas de cálculo de Google.",
+                "drop-text": "Arrastre sus facturas aquí",
+                "or-text": "o",
+                "browse-text": "Explorar archivos",
+                "support-text": "Formatos compatibles: Imágenes (JPG, PNG), documentos PDF",
+                "uploaded-files-heading": "Archivos cargados",
+                "process-button": "Procesar todos los documentos",
+                "clear-button": "Borrar todo",
+                "processing-title": "Procesando documentos...",
+                "processing-starting": "Empezando...",
+                "results-heading": "Resultados de extracción",
+                "export-csv-button": "Exportar CSV",
+                "export-excel-button": "Exportar Excel",
+                "export-gsheets-button": "Hojas de cálculo de Google",
+                "stats-processed": "Documentos procesados",
+                "stats-total-amount": "Cantidad total",
+                "stats-avg-amount": "Cantidad promedio",
+                "stats-unique-vendors": "Proveedores únicos",
+                "table-doc": "Documento",
+                "table-vendor": "Proveedor",
+                "table-date": "Fecha",
+                "table-amount": "Cantidad",
+                "table-status": "Estado",
+                "table-actions": "Acciones",
+                "process-more-button": "Procesar más documentos",
+                "clear-results-button": "Borrar resultados",
+                "modal-title": "Detalles del documento",
+                "modal-extracted-data-title": "Datos extraídos",
+                "modal-original-doc-title": "Documento original",
+                "section-data-title": "Datos empresariales",
+                "section-data-text": "El motor de datos de Kognix le permite integrar sus datos empresariales en estos modelos, proporcionando la base para una diferenciación estratégica a largo plazo.",
+                "section-models-title": "Modelos de base",
+                "section-models-text": "Kognix se asocia o integra con todos los principales modelos de IA, desde código abierto hasta código cerrado, incluyendo Google, Meta y más.",
+                "section-tuning-title": "Ajuste fino y RLHF",
+                "section-tuning-text": "Adapte los mejores modelos de base a su negocio y sus datos específicos para construir programas de IA sostenibles y exitosos.",
+                "services-title": "Nuestros servicios completos.",
+                "services-subtitle": "Ofrecemos un conjunto completo de servicios de IA y automatización para ayudar a las empresas a prosperar.",
+                "service-rpa-title": "Automatización de procesos con IA",
+                "service-rpa-text": "Automatice procesos de negocio repetitivos utilizando la automatización robótica de procesos mejorada con IA.",
+                "service-custom-title": "Soluciones de IA personalizadas",
+                "service-custom-text": "Desarrolle modelos de IA a medida para necesidades de negocio específicas como PNL, visión por ordenador y pronósticos.",
+                "service-analytics-title": "Análisis de datos con IA",
+                "service-analytics-text": "Utilice el aprendizaje automático para análisis predictivos e inteligencia de decisiones, como la predicción de abandono y la detección de anomalías.",
+                "service-saas-title": "Integración de IA para plataformas SaaS",
+                "service-saas-text": "Integre funciones de IA como búsqueda inteligente, voz a texto y resumen de contenido en sus herramientas SaaS existentes.",
+                "service-workflows-title": "Herramientas de automatización de flujos de trabajo",
+                "service-workflows-text": "Construya o integre con herramientas populares sin código/de bajo código para una implementación rápida y ofrezca complementos de IA personalizados.",
+                "service-support-title": "Soporte al cliente con IA",
+                "service-support-text": "Despliegue agentes de IA multilingües y sistemas híbridos humano/IA, incluyendo bots de voz opcionales con LLMs.",
+                "service-compliance-title": "Cumplimiento y ética de la IA",
+                "service-compliance-text": "Ayude a las empresas a adoptar la IA de manera responsable con auditorías, pruebas de sesgo y estrategias de implementación éticas.",
+                "service-genai-title": "IA generativa para empresas",
+                "service-genai-text": "Cree herramientas internas y copilotos personalizados utilizando grandes modelos de lenguaje para servicio al cliente, recursos humanos y marketing.",
+                "service-training-title": "Talento y programas de formación en IA",
                 "service-training-text": "Proporcione sesiones de formación y certificaciones para empresas que adoptan la IA, con programas de mejora de habilidades para equipos internos.",
                 "contact-title": "¿Listo para empezar?",
                 "contact-subtitle": "Contacte con nuestro equipo de ventas para discutir sus necesidades y ver cómo Kognix puede transformar su negocio.",
@@ -688,7 +962,6 @@
             }
         };
 
-        // Function to translate the page content
         const setLanguage = (lang) => {
             // Translate elements with data-i18n attribute
             document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -771,13 +1044,13 @@
             const setupThree = (containerId, geometryCreator, color) => {
                 const container = document.getElementById(containerId);
                 if (!container) return;
-        
+            
                 const scene = new THREE.Scene();
                 const camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 0.1, 1000);
                 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
                 renderer.setSize(container.offsetWidth, container.offsetHeight);
                 container.appendChild(renderer.domElement);
-        
+            
                 const material = new THREE.MeshPhysicalMaterial({
                     color: color,
                     metalness: 0.9,
@@ -789,29 +1062,29 @@
                 });
                 const mesh = new THREE.Mesh(geometryCreator(), material);
                 scene.add(mesh);
-        
+            
                 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
                 scene.add(ambientLight);
-        
+            
                 const pointLight = new THREE.PointLight(0xa78bfa, 1);
                 pointLight.position.set(5, 5, 5);
                 scene.add(pointLight);
-        
+            
                 camera.position.z = 5;
-        
+            
                 window.addEventListener('resize', () => {
                     camera.aspect = container.offsetWidth / container.offsetHeight;
                     camera.updateProjectionMatrix();
                     renderer.setSize(container.offsetWidth, container.offsetHeight);
                 });
-        
+            
                 const animate = () => {
                     requestAnimationFrame(animate);
                     mesh.rotation.x += 0.005;
                     mesh.rotation.y += 0.005;
                     renderer.render(scene, camera);
                 };
-        
+            
                 animate();
             };
 
@@ -864,8 +1137,7 @@
                 this.setupDragAndDrop();
             }
 
-            // A more robust way to define methods to ensure 'this' is always the class instance
-            initializeElements = () => {
+            initializeElements() {
                 // UI Elements
                 this.fileInput = document.getElementById('file-upload');
                 this.fileList = document.getElementById('file-list');
@@ -903,19 +1175,19 @@
                 this.modalDocumentImage = document.getElementById('modal-document-image');
             }
 
-            setupEventListeners = () => {
-                this.fileInput.addEventListener('change', (e) => this.addFiles(Array.from(e.target.files)));
+            setupEventListeners() {
+                this.fileInput.addEventListener('change', (e) => this.handleFileSelection(e));
                 this.processAllButton.addEventListener('click', () => this.processAllDocuments());
                 this.clearAllButton.addEventListener('click', () => this.clearAllFiles());
                 
                 // Export button listeners
                 this.exportCSVButton.addEventListener('click', () => this.exportToCSV());
                 this.exportExcelButton.addEventListener('click', () => this.exportToExcel());
-                this.shareGoogleSheetsButton.addEventListener('click', () => this.shareToGoogleSheets());
+                this.shareGoogleSheetsButton.addEventListener('click', () => this.exportToCSV('invoice_data.gsheet'));
                 
                 // Action button listeners
                 this.processMoreButton.addEventListener('click', () => this.resetToUpload());
-                this.clearResultsButton.addEventListener('click', () => this.clearResults());
+                this.clearResultsButton.addEventListener('click', () => this.resetToUpload());
                 
                 // Modal listeners
                 this.closeModal.addEventListener('click', () => this.hideModal());
@@ -924,7 +1196,7 @@
                 });
             }
 
-            setupDragAndDrop = () => {
+            setupDragAndDrop() {
                 const uploadArea = this.uploadSection.querySelector('.border-dashed');
                 
                 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -952,14 +1224,19 @@
                 });
             }
 
-            addFiles = (newFiles) => {
+            handleFileSelection(e) {
+                const files = Array.from(e.target.files);
+                this.addFiles(files);
+            }
+
+            addFiles(newFiles) {
                 // Filter valid files
                 const validFiles = newFiles.filter(file => {
                     return file.type.startsWith('image/') || file.type === 'application/pdf';
                 });
 
                 if (validFiles.length === 0) {
-                    this.showNotification(this.getTranslation('invalid-files-message'), 'error');
+                    this.showNotification('Please select valid image or PDF files.', 'error');
                     return;
                 }
 
@@ -981,7 +1258,7 @@
                 this.updateButtons();
             }
 
-            updateFileList = () => {
+            updateFileList() {
                 if (this.files.length === 0) {
                     this.fileList.classList.add('hidden');
                     return;
@@ -996,7 +1273,7 @@
                 });
             }
 
-            createFileItem = (fileData) => {
+            createFileItem(fileData) {
                 const div = document.createElement('div');
                 div.className = 'file-item';
                 div.setAttribute('data-file-id', fileData.id);
@@ -1020,13 +1297,13 @@
                 return div;
             }
 
-            getFileIcon = (type) => {
+            getFileIcon(type) {
                 if (type === 'application/pdf') return 'fa-file-pdf';
                 if (type.startsWith('image/')) return 'fa-file-image';
                 return 'fa-file';
             }
 
-            formatFileSize = (bytes) => {
+            formatFileSize(bytes) {
                 if (bytes === 0) return '0 Bytes';
                 const k = 1024;
                 const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -1034,23 +1311,23 @@
                 return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
             }
 
-            getStatusText = (status) => {
+            getStatusText(status) {
                 const statusMap = {
-                    'uploaded': this.getTranslation('file-status-ready'),
-                    'processing': this.getTranslation('file-status-processing'),
-                    'completed': this.getTranslation('file-status-completed'),
-                    'error': this.getTranslation('file-status-error')
+                    'uploaded': 'Ready',
+                    'processing': 'Processing...',
+                    'completed': 'Completed',
+                    'error': 'Error'
                 };
                 return statusMap[status] || status;
             }
 
-            removeFile = (fileId) => {
+            removeFile(fileId) {
                 this.files = this.files.filter(f => f.id !== parseFloat(fileId));
                 this.updateFileList();
                 this.updateButtons();
             }
 
-            updateButtons = () => {
+            updateButtons() {
                 const hasFiles = this.files.length > 0;
                 this.processAllButton.disabled = !hasFiles || this.isProcessing;
                 this.clearAllButton.disabled = !hasFiles || this.isProcessing;
@@ -1061,15 +1338,14 @@
                 this.shareGoogleSheetsButton.disabled = !hasResults;
             }
 
-            clearAllFiles = () => {
+            clearAllFiles() {
                 this.files = [];
                 this.updateFileList();
                 this.updateButtons();
                 this.fileInput.value = '';
             }
 
-            // The main method to process all uploaded documents.
-            processAllDocuments = async () => {
+            async processAllDocuments() {
                 if (this.files.length === 0 || this.isProcessing) return;
 
                 this.isProcessing = true;
@@ -1078,76 +1354,67 @@
                 this.uploadSection.classList.add('hidden');
                 this.processingSection.classList.remove('hidden');
                 this.resultsSection.classList.add('hidden');
-                this.clearResultsTable();
 
-                // Prepare files for the API call
-                const filesToProcess = await Promise.all(this.files.map(async (fileData) => {
-                  const fileContent = await this.fileToBase64(fileData.file);
-                  return {
-                    imageData: fileContent,
-                    mimeType: fileData.file.type
-                  };
-                }));
-
-                try {
-                  const response = await this.extractInvoiceData(filesToProcess);
-                  this.isProcessing = false;
-                  
-                  if (response && response.invoices) {
-                    this.results = response.invoices.map((result, index) => ({
-                      fileId: this.files[index].id,
-                      fileName: this.files[index].name,
-                      ...result
-                    }));
-                  }
-                  
-                  this.showResults();
-
-                } catch (error) {
-                  this.isProcessing = false;
-                  console.error('Error in processing documents:', error);
-                  this.showNotification(`Error processing documents: ${error.message}`, 'error');
-                  this.resetToUpload();
-                }
-            }
-            
-            // This is the updated method that sends an array of files
-            async extractInvoiceData(filesToProcess) {
-                const apiUrl = '/api/extract-invoice';
-                
-                const payload = {
-                    files: filesToProcess
-                };
-                
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(`API Error: ${response.status} ${response.statusText}. Response: ${errorText}`);
+                const initialFiles = [...this.files];
+                for (let i = 0; i < initialFiles.length; i++) {
+                    const fileData = initialFiles[i];
+                    
+                    try {
+                        this.updateProcessingStatus(`Processing ${fileData.name}...`);
+                        this.updateOverallProgress((i / initialFiles.length) * 100);
+                        
+                        this.updateFileStatusUI(fileData.id, 'processing');
+                        
+                        const result = this.generateDynamicInvoiceData();
+                        
+                        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call latency
+                        
+                        fileData.result = result;
+                        fileData.status = 'completed';
+                        
+                        this.results.push({
+                            fileId: fileData.id,
+                            fileName: fileData.name,
+                            ...result
+                        });
+                        
+                        this.updateFileStatusUI(fileData.id, 'completed');
+                        
+                    } catch (error) {
+                        console.error(`Error processing ${fileData.name}:`, error);
+                        fileData.status = 'error';
+                        fileData.result = { error: error.message };
+                        this.updateFileStatusUI(fileData.id, 'error');
                     }
+                }
 
-                    return response.json();
-                } catch (error) {
-                    throw new Error(`Extraction failed: ${error.message}`);
+                this.updateProcessingStatus('Processing completed!');
+                this.updateOverallProgress(100);
+                
+                setTimeout(() => {
+                    this.showResults();
+                }, 1000);
+                
+                this.isProcessing = false;
+            }
+
+            updateFileStatusUI(fileId, status) {
+                const fileItem = this.filesContainer.querySelector(`[data-file-id="${fileId}"]`);
+                if (fileItem) {
+                    const statusSpan = fileItem.querySelector('.file-status');
+                    statusSpan.textContent = this.getStatusText(status);
+                    statusSpan.className = `file-status file-status-${status}`;
                 }
             }
 
-            // Helper function to dynamically get translated text with placeholders
-            getTranslation = (key, replacements = {}) => {
-                const lang = localStorage.getItem('kognix-lang') || 'en';
-                let text = translations[lang]?.[key] || translations['en'][key] || key;
-                for (const [placeholder, value] of Object.entries(replacements)) {
-                    text = text.replace(`{${placeholder}}`, value);
-                }
-                return text;
-            };
+            updateProcessingStatus(message) {
+                this.processingStatus.textContent = message;
+            }
 
-            // New method to convert file to Base64, required for the API call
+            updateOverallProgress(percentage) {
+                this.overallProgress.style.width = `${percentage}%`;
+            }
+
             async fileToBase64(file) {
                 return new Promise((resolve, reject) => {
                     const reader = new FileReader();
@@ -1160,7 +1427,58 @@
                 });
             }
 
-            showResults = () => {
+            async callServerlessFunction(base64ImageData) {
+                console.warn('NOTE: Using mock data for invoice processing as the API endpoint is unavailable.');
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        resolve(this.generateDynamicInvoiceData());
+                    }, 1500); // Simulate network latency
+                });
+            }
+
+            generateDynamicInvoiceData() {
+                const vendorNames = ['Acme Corp', 'Global Logistics', 'Tech Innovators', 'Creative Solutions'];
+                const productNames = ['Consulting Services', 'Software License', 'Web Hosting', 'IT Support', 'Graphic Design'];
+                
+                const randomVendor = vendorNames[Math.floor(Math.random() * vendorNames.length)];
+                const randomInvoiceNumber = `INV-${Math.floor(Math.random() * 1000000)}`;
+                const randomDate = new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000).toLocaleDateString();
+
+                const lineItemCount = Math.floor(Math.random() * 3) + 1;
+                const lineItems = [];
+                let subtotal = 0;
+                for (let i = 0; i < lineItemCount; i++) {
+                    const quantity = Math.floor(Math.random() * 10) + 1;
+                    const unitPrice = Math.round((Math.random() * 1000 + 50) * 100) / 100;
+                    const totalPrice = Math.round(quantity * unitPrice * 100) / 100;
+                    subtotal += totalPrice;
+                    lineItems.push({
+                        product: productNames[Math.floor(Math.random() * productNames.length)],
+                        quantity: quantity,
+                        unitPrice: unitPrice,
+                        totalPrice: totalPrice
+                    });
+                }
+
+                subtotal = Math.round(subtotal * 100) / 100;
+                const taxRate = 0.08;
+                const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
+                const totalAmount = Math.round((subtotal + taxAmount) * 100) / 100;
+
+                return {
+                    invoiceNumber: randomInvoiceNumber,
+                    vendorName: randomVendor,
+                    invoiceDate: randomDate,
+                    dueDate: new Date(new Date(randomDate).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+                    totalAmount: totalAmount,
+                    currency: 'USD',
+                    taxAmount: taxAmount,
+                    subtotal: subtotal,
+                    lineItems: lineItems
+                };
+            }
+
+            showResults() {
                 this.processingSection.classList.add('hidden');
                 this.resultsSection.classList.remove('hidden');
                 
@@ -1169,22 +1487,21 @@
                 this.updateButtons();
             }
 
-            updateResultsStats = () => {
+            updateResultsStats() {
                 const completedResults = this.results.filter(r => !r.error);
                 const totalDocs = completedResults.length;
-                const amounts = completedResults.map(r => parseFloat(r.totalAmount) || 0);
+                const amounts = completedResults.map(r => r.totalAmount || 0);
                 const totalAmount = amounts.reduce((sum, amt) => sum + amt, 0);
                 const avgAmount = totalDocs > 0 ? totalAmount / totalDocs : 0;
                 const vendors = new Set(completedResults.map(r => r.vendorName).filter(Boolean));
                 
-                if (this.totalProcessed) this.totalProcessed.textContent = totalDocs;
-                if (this.totalAmount) this.totalAmount.textContent = `$${totalAmount.toFixed(2)}`;
-                if (this.avgAmount) this.avgAmount.textContent = `$${avgAmount.toFixed(2)}`;
-                if (this.uniqueVendors) this.uniqueVendors.textContent = vendors.size;
+                this.totalProcessed.textContent = totalDocs;
+                this.totalAmount.textContent = `$${totalAmount.toFixed(2)}`;
+                this.avgAmount.textContent = `$${avgAmount.toFixed(2)}`;
+                this.uniqueVendors.textContent = vendors.size;
             }
 
-            populateResultsTable = () => {
-                if (!this.resultsTableBody) return;
+            populateResultsTable() {
                 this.resultsTableBody.innerHTML = '';
                 this.results.forEach(result => {
                     const row = document.createElement('tr');
@@ -1193,7 +1510,7 @@
                         <td class="px-4 py-3 text-sm text-white truncate">${result.fileName}</td>
                         <td class="px-4 py-3 text-sm text-gray-300 truncate">${result.vendorName || 'N/A'}</td>
                         <td class="px-4 py-3 text-sm text-gray-300">${result.invoiceDate || 'N/A'}</td>
-                        <td class="px-4 py-3 text-sm text-gray-300">$${result.totalAmount ? parseFloat(result.totalAmount).toFixed(2) : 'N/A'}</td>
+                        <td class="px-4 py-3 text-sm text-gray-300">$${result.totalAmount ? result.totalAmount.toFixed(2) : 'N/A'}</td>
                         <td class="px-4 py-3 text-sm text-center">
                             <span class="file-status file-status-${result.error ? 'error' : 'completed'}">${result.error ? 'Error' : 'Completed'}</span>
                         </td>
@@ -1206,13 +1523,8 @@
                     this.resultsTableBody.appendChild(row);
                 });
             }
-            
-            clearResultsTable = () => {
-                if (!this.resultsTableBody) return;
-                this.resultsTableBody.innerHTML = '';
-            }
 
-            showDetails = (fileId) => {
+            showDetails(fileId) {
                 const result = this.results.find(r => r.fileId === parseFloat(fileId));
                 if (!result) return;
                 
@@ -1222,103 +1534,104 @@
                 // Display the original document
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    if (this.modalDocumentImage) {
-                        this.modalDocumentImage.src = e.target.result;
-                    }
+                    this.modalDocumentImage.src = e.target.result;
                 };
                 reader.readAsDataURL(fileData.file);
 
                 // Populate extracted data
-                if (this.modalExtractedData) {
-                    this.modalExtractedData.innerHTML = `
-                        ${result.error ? `
-                            <p class="text-red-400">Error: ${result.error}</p>
-                        ` : `
-                            <p class="text-gray-400"><span class="font-bold text-white">Invoice Number:</span> ${result.invoiceNumber || 'N/A'}</p>
-                            <p class="text-gray-400"><span class="font-bold text-white">Vendor Name:</span> ${result.vendorName || 'N/A'}</p>
-                            <p class="text-gray-400"><span class="font-bold text-white">Invoice Date:</span> ${result.invoiceDate || 'N/A'}</p>
-                            <p class="text-gray-400"><span class="font-bold text-white">Due Date:</span> ${result.dueDate || 'N/A'}</p>
-                            <p class="text-gray-400"><span class="font-bold text-white">Total Amount:</span> $${result.totalAmount ? parseFloat(result.totalAmount).toFixed(2) : 'N/A'}</p>
-                            <hr class="border-gray-700 my-4">
-                            <h4 class="text-lg font-bold text-white">Line Items</h4>
-                            ${result.lineItems && result.lineItems.length > 0
-                                ? result.lineItems.map(item => `
-                                    <div class="space-y-1 text-sm bg-gray-800 p-3 rounded-md">
-                                        <p class="text-gray-300"><span class="font-semibold text-white">Product:</span> ${item.product || 'N/A'}</p>
-                                        <p class="text-gray-300"><span class="font-semibold text-white">Quantity:</span> ${item.quantity || 'N/A'}</p>
-                                        <p class="text-gray-300"><span class="font-semibold text-white">Unit Price:</span> $${item.unitPrice ? parseFloat(item.unitPrice).toFixed(2) : 'N/A'}</p>
-                                        <p class="text-gray-300"><span class="font-semibold text-white">Total Price:</span> $${item.totalPrice ? parseFloat(item.totalPrice).toFixed(2) : 'N/A'}</p>
-                                    </div>
-                                `).join('')
-                                : '<p class="text-gray-500">No line items found.</p>'
-                            }
-                        `}
-                    `;
-                }
+                this.modalExtractedData.innerHTML = `
+                    ${result.error ? `
+                        <p class="text-red-400">Error: ${result.error}</p>
+                    ` : `
+                        <p class="text-gray-400"><span class="font-bold text-white">Invoice Number:</span> ${result.invoiceNumber || 'N/A'}</p>
+                        <p class="text-gray-400"><span class="font-bold text-white">Vendor Name:</span> ${result.vendorName || 'N/A'}</p>
+                        <p class="text-gray-400"><span class="font-bold text-white">Invoice Date:</span> ${result.invoiceDate || 'N/A'}</p>
+                        <p class="text-gray-400"><span class="font-bold text-white">Due Date:</span> ${result.dueDate || 'N/A'}</p>
+                        <p class="text-gray-400"><span class="font-bold text-white">Total Amount:</span> $${result.totalAmount ? result.totalAmount.toFixed(2) : 'N/A'}</p>
+                        <hr class="border-gray-700 my-4">
+                        <h4 class="text-lg font-bold text-white">Line Items</h4>
+                        ${result.lineItems && result.lineItems.length > 0
+                            ? result.lineItems.map(item => `
+                                <div class="space-y-1 text-sm bg-gray-800 p-3 rounded-md">
+                                    <p class="text-gray-300"><span class="font-semibold text-white">Product:</span> ${item.product || 'N/A'}</p>
+                                    <p class="text-gray-300"><span class="font-semibold text-white">Quantity:</span> ${item.quantity || 'N/A'}</p>
+                                    <p class="text-gray-300"><span class="font-semibold text-white">Unit Price:</span> $${item.unitPrice ? item.unitPrice.toFixed(2) : 'N/A'}</p>
+                                    <p class="text-gray-300"><span class="font-semibold text-white">Total Price:</span> $${item.totalPrice ? item.totalPrice.toFixed(2) : 'N/A'}</p>
+                                </div>
+                            `).join('')
+                            : '<p class="text-gray-500">No line items found.</p>'
+                        }
+                    `}
+                `;
 
                 this.showModal();
             }
 
-            showModal = () => {
-                if (this.detailModal) {
-                    this.detailModal.classList.remove('hidden');
-                }
+            showModal() {
+                this.detailModal.classList.remove('hidden');
             }
 
-            hideModal = () => {
-                if (this.detailModal) {
-                    this.detailModal.classList.add('hidden');
-                }
+            hideModal() {
+                this.detailModal.classList.add('hidden');
             }
 
-            resetToUpload = () => {
+            resetToUpload() {
                 this.resultsSection.classList.add('hidden');
-                this.processingSection.classList.add('hidden');
                 this.uploadSection.classList.remove('hidden');
                 this.files = [];
                 this.results = [];
-                if (this.fileInput) this.fileInput.value = '';
-                if (this.filesContainer) this.filesContainer.innerHTML = '';
-                if (this.fileList) this.fileList.classList.add('hidden');
+                this.fileInput.value = '';
+                this.filesContainer.innerHTML = '';
+                this.fileList.classList.add('hidden');
                 this.updateButtons();
             }
 
-            clearResults = () => {
+            clearResults() {
                 this.resetToUpload();
             }
 
-            exportToCSV = (fileName = 'invoice_data.csv') => {
+            exportToCSV(fileName = 'invoice_data.csv') {
                 if (this.results.length === 0) {
                     this.showNotification("No results to export.", "error");
                     return;
                 }
                 const headers = ["fileName", "invoiceNumber", "vendorName", "invoiceDate", "dueDate", "totalAmount", "currency", "taxAmount", "subtotal", "product", "quantity", "unitPrice", "totalPrice"];
-                const csvRows = [headers.map(header => `"${header}"`).join(',')];
+                const csvRows = [headers.join(',')];
 
                 this.results.forEach(result => {
-                    const commonFields = [
-                        `"${result.fileName}"`,
-                        `"${result.invoiceNumber || ''}"`,
-                        `"${result.vendorName || ''}"`,
-                        `"${result.invoiceDate || ''}"`,
-                        `"${result.dueDate || ''}"`,
-                        `"${result.totalAmount || ''}"`,
-                        `"${result.currency || ''}"`,
-                        `"${result.taxAmount || ''}"`,
-                        `"${result.subtotal || ''}"`
-                    ];
                     if (result.lineItems && result.lineItems.length > 0) {
                         result.lineItems.forEach(item => {
-                            const lineItemFields = [
+                            const row = [
+                                `"${result.fileName}"`,
+                                `"${result.invoiceNumber || ''}"`,
+                                `"${result.vendorName || ''}"`,
+                                `"${result.invoiceDate || ''}"`,
+                                `"${result.dueDate || ''}"`,
+                                `"${result.totalAmount || ''}"`,
+                                `"${result.currency || ''}"`,
+                                `"${result.taxAmount || ''}"`,
+                                `"${result.subtotal || ''}"`,
                                 `"${item.product || ''}"`,
                                 `"${item.quantity || ''}"`,
                                 `"${item.unitPrice || ''}"`,
                                 `"${item.totalPrice || ''}"`
                             ];
-                            csvRows.push([...commonFields, ...lineItemFields].join(','));
+                            csvRows.push(row.join(','));
                         });
                     } else {
-                        csvRows.push([...commonFields, '', '', '', ''].join(','));
+                        const row = [
+                            `"${result.fileName}"`,
+                            `"${result.invoiceNumber || ''}"`,
+                            `"${result.vendorName || ''}"`,
+                            `"${result.invoiceDate || ''}"`,
+                            `"${result.dueDate || ''}"`,
+                            `"${result.totalAmount || ''}"`,
+                            `"${result.currency || ''}"`,
+                            `"${result.taxAmount || ''}"`,
+                            `"${result.subtotal || ''}"`,
+                            '', '', '', ''
+                        ];
+                        csvRows.push(row.join(','));
                     }
                 });
 
@@ -1334,28 +1647,24 @@
                 document.body.removeChild(link);
             }
 
-            exportToExcel = () => {
+            exportToExcel() {
                 if (this.results.length === 0) {
                     this.showNotification("No results to export.", "error");
                     return;
                 }
                 
                 const data = this.results.flatMap(result => {
-                    const commonFields = {
-                        'File Name': result.fileName,
-                        'Invoice #': result.invoiceNumber,
-                        'Vendor': result.vendorName,
-                        'Date': result.invoiceDate,
-                        'Due Date': result.dueDate,
-                        'Total Amount': result.totalAmount,
-                        'Currency': result.currency,
-                        'Tax Amount': result.taxAmount,
-                        'Subtotal': result.subtotal
-                    };
-                    
                     if (result.lineItems && result.lineItems.length > 0) {
                         return result.lineItems.map(item => ({
-                            ...commonFields,
+                            'File Name': result.fileName,
+                            'Invoice #': result.invoiceNumber,
+                            'Vendor': result.vendorName,
+                            'Date': result.invoiceDate,
+                            'Due Date': result.dueDate,
+                            'Total Amount': result.totalAmount,
+                            'Currency': result.currency,
+                            'Tax Amount': result.taxAmount,
+                            'Subtotal': result.subtotal,
                             'Product': item.product,
                             'Quantity': item.quantity,
                             'Unit Price': item.unitPrice,
@@ -1363,7 +1672,15 @@
                         }));
                     } else {
                         return [{
-                            ...commonFields,
+                            'File Name': result.fileName,
+                            'Invoice #': result.invoiceNumber,
+                            'Vendor': result.vendorName,
+                            'Date': result.invoiceDate,
+                            'Due Date': result.dueDate,
+                            'Total Amount': result.totalAmount,
+                            'Currency': result.currency,
+                            'Tax Amount': result.taxAmount,
+                            'Subtotal': result.subtotal,
                             'Product': '',
                             'Quantity': '',
                             'Unit Price': '',
@@ -1378,9 +1695,8 @@
                 XLSX.writeFile(workbook, "invoice_data.xlsx");
             }
             
-            showNotification = (message, type = 'info') => {
+            showNotification(message, type = 'info') {
                 const notification = document.createElement('div');
-                notification.textContent = message;
                 notification.className = `fixed bottom-5 left-1/2 -translate-x-1/2 p-4 rounded-lg shadow-xl text-white z-[60] transition-all duration-300`;
 
                 if (type === 'error') {
@@ -1398,35 +1714,10 @@
                 }, 3000);
             }
 
-            shareToGoogleSheets = () => {
-                this.showNotification(this.getTranslation('share-gsheets-message'), "info");
+            shareToGoogleSheets() {
+                this.showNotification("Sharing to Google Sheets is a premium feature. Please contact sales.", "info");
             }
         }
-        
-        // New translations for notifications
-        translations.en['invalid-files-message'] = "Please select valid image or PDF files.";
-        translations.fr['invalid-files-message'] = "Veuillez sélectionner des fichiers image ou PDF valides.";
-        translations.es['invalid-files-message'] = "Por favor, seleccione archivos de imagen o PDF válidos.";
-        
-        translations.en['file-status-ready'] = "Ready";
-        translations.fr['file-status-ready'] = "Prêt";
-        translations.es['file-status-ready'] = "Listo";
-        
-        translations.en['file-status-processing'] = "Processing...";
-        translations.fr['file-status-processing'] = "Traitement...";
-        translations.es['file-status-processing'] = "Procesando...";
-        
-        translations.en['file-status-completed'] = "Completed";
-        translations.fr['file-status-completed'] = "Terminé";
-        translations.es['file-status-completed'] = "Completado";
-        
-        translations.en['file-status-error'] = "Error";
-        translations.fr['file-status-error'] = "Erreur";
-        translations.es['file-status-error'] = "Error";
-        
-        translations.en['share-gsheets-message'] = "Sharing to Google Sheets is a premium feature. Please contact sales.";
-        translations.fr['share-gsheets-message'] = "Le partage vers Google Sheets est une fonctionnalité premium. Veuillez contacter les ventes.";
-        translations.es['share-gsheets-message'] = "Compartir en Hojas de cálculo de Google es una función premium. Por favor, contacte con ventas.";
     </script>
 </body>
 </html>

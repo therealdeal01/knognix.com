@@ -6,10 +6,12 @@
     <title>Kognix - The Enterprise AI Platform</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Three.js Library -->
+    <!-- Three.js Library for 3D visuals -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Custom Font and Style Properties -->
     <style>
         body {
@@ -87,6 +89,92 @@
             opacity: 0.3; /* Further increased opacity for better visibility */
             pointer-events: none;
         }
+        
+        /* Custom styling for the MVP loader/result view */
+        .mvp-loader {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+        }
+
+        .invoice-card {
+            background-color: #1a202c; /* gray-900 */
+            border-radius: 0.75rem; /* rounded-xl */
+            border: 1px solid #374151; /* gray-700 */
+        }
+
+        /* File upload styles */
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background-color: #374151;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            transition: background-color 0.2s;
+        }
+
+        .file-item:hover {
+            background-color: #4B5563;
+        }
+
+        .file-status-uploaded {
+            color: #E5E7EB; /* gray-200 */
+        }
+
+        .file-status-processing {
+            color: #F59E0B; /* amber-500 */
+        }
+
+        .file-status-error {
+            color: #EF4444; /* red-500 */
+        }
+
+        .file-status-completed {
+            color: #10B981; /* green-500 */
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background-color: #374151;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: #3B82F6;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Custom scrollbar for results */
+        .scrollable-results {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .scrollable-results::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scrollable-results::-webkit-scrollbar-track {
+            background: #374151;
+            border-radius: 3px;
+        }
+
+        .scrollable-results::-webkit-scrollbar-thumb {
+            background: #6B7280;
+            border-radius: 3px;
+        }
+
+        .scrollable-results::-webkit-scrollbar-thumb:hover {
+            background: #9CA3AF;
+        }
     </style>
 </head>
 <body class="bg-gray-950 text-white flex flex-col min-h-screen">
@@ -95,7 +183,7 @@
     <header class="bg-gray-950 sticky top-0 z-50 shadow-lg">
         <nav class="container mx-auto px-4 py-4 flex justify-between items-center">
             <!-- Kognix Logo -->
-            <a href="#" class="flex items-center space-x-2">
+            <a href="/" class="flex items-center space-x-2">
                 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <rect x="0.5" y="0.5" width="10" height="10" rx="2" fill="url(#paint0_linear_2_23)" stroke="url(#paint1_linear_2_23)"/>
                     <rect x="21.5" y="0.5" width="10" height="10" rx="2" fill="url(#paint2_linear_2_23)" stroke="url(#paint3_linear_2_23)"/>
@@ -137,7 +225,7 @@
                 <a href="#solutions-section" class="text-gray-400 hover:text-white transition-colors" data-i18n="nav-services">Services</a>
                 <a href="#dynamic-sections" class="text-gray-400 hover:text-white transition-colors" data-i18n="nav-platform">Platform</a>
                 <a href="#contact" class="text-gray-400 hover:text-white transition-colors" data-i18n="nav-contact">Contact</a>
-                <a href="#contact" class="bg-white text-gray-900 font-semibold py-2 px-6 rounded-md transition-all duration-300 transform hover:scale-105 shadow-lg" data-i18n="nav-demo">Request Demo</a>
+                <a href="#mvp-section" class="bg-white text-gray-900 font-semibold py-2 px-6 rounded-md transition-all duration-300 transform hover:scale-105 shadow-lg" data-i18n="nav-demo">Try the MVP</a>
             </div>
             
             <!-- Language Dropdown -->
@@ -160,8 +248,7 @@
                 <a href="#solutions-section" class="block py-2 px-4 hover:bg-gray-800 rounded-lg" data-i18n="nav-services">Services</a>
                 <a href="#dynamic-sections" class="block py-2 px-4 hover:bg-gray-800 rounded-lg" data-i18n="nav-platform">Platform</a>
                 <a href="#pricing" class="block py-2 px-4 hover:bg-gray-800 rounded-lg" data-i18n="nav-pricing">Pricing</a>
-                <a href="#contact" class="block py-2 px-4 hover:bg-gray-800 rounded-lg" data-i18n="nav-contact">Contact</a>
-                <a href="#contact" class="block bg-white text-gray-900 text-center font-semibold py-2 px-6 rounded-md mt-2" data-i18n="nav-demo">Request Demo</a>
+                <a href="#mvp-section" class="block bg-white text-gray-900 text-center font-semibold py-2 px-6 rounded-md mt-2" data-i18n="nav-demo">Try the MVP</a>
             </div>
         </div>
     </header>
@@ -177,15 +264,173 @@
                     Kognix is building the AI platform to deliver proven data, evaluations, and outcomes to AI labs, governments, and enterprises.
                 </p>
                 <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-                    <a href="#contact" class="bg-white text-gray-900 font-bold py-3 px-8 rounded-md transition-all duration-300 transform hover:scale-105 shadow-lg" data-i18n="hero-cta-demo">
-                        Book a Demo
+                    <!-- FIX: Corrected the href to point to the MVP section -->
+                    <a href="#mvp-section" class="bg-white text-gray-900 font-bold py-3 px-8 rounded-md transition-all duration-300 transform hover:scale-105 shadow-lg" data-i18n="hero-cta-demo">
+                        Try the MVP
                     </a>
                 </div>
             </div>
         </section>
         
-        <!-- Dynamic Content Sections (kept as is, per user request) -->
-        <section id="dynamic-sections" class="py-20 md:py-24 bg-gray-900">
+        <!-- Enhanced MVP Section -->
+        <section id="mvp-section" class="py-20 md:py-24 bg-gray-950">
+            <div class="container mx-auto px-4">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4 text-white text-center" data-i18n="mvp-title">Advanced Invoice Processing AI</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto mb-12 text-center" data-i18n="mvp-subtitle">Upload multiple invoices, receipts, or business documents and watch our AI extract key information instantly. Export results to CSV or Google Sheets.</p>
+
+                <!-- Enhanced MVP APP -->
+                <div id="app-mvp" class="w-full">
+                    <div class="bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-800 max-w-6xl mx-auto">
+                        
+                        <!-- File Upload Section -->
+                        <div id="upload-section" class="space-y-6">
+                            <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-700 rounded-lg p-10 text-center cursor-pointer transition-colors hover:border-indigo-500">
+                                <label for="file-upload" class="flex flex-col items-center cursor-pointer space-y-2" data-i18n="upload-label">
+                                    <svg class="w-12 h-12 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v8"></path>
+                                    </svg>
+                                    <span class="text-lg font-semibold text-white" data-i18n="drop-text">Drop your invoices here</span>
+                                    <span class="text-sm text-gray-400" data-i18n="or-text">or</span>
+                                    <span class="text-indigo-400 font-medium" data-i18n="browse-text">Browse files</span>
+                                    <span class="text-xs text-gray-500" data-i18n="support-text">Supports: Images (JPG, PNG), PDF documents</span>
+                                </label>
+                                <input id="file-upload" type="file" accept="image/*,.pdf" multiple class="hidden">
+                            </div>
+
+                            <!-- Uploaded Files List -->
+                            <div id="file-list" class="hidden space-y-2">
+                                <h3 class="text-lg font-semibold text-white" data-i18n="uploaded-files-heading">Uploaded Files</h3>
+                                <div id="files-container" class="space-y-2 max-h-60 overflow-y-auto">
+                                    <!-- File items will be added here -->
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mt-6">
+                                <button id="process-all-button" class="flex-1 bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg transition-colors hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed" disabled data-i18n="process-button">
+                                    <i class="fas fa-cogs mr-2"></i>Process All Documents
+                                </button>
+                                <button id="clear-all-button" class="bg-gray-700 text-white font-bold py-3 px-8 rounded-lg transition-colors hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed" disabled data-i18n="clear-button">
+                                    <i class="fas fa-trash mr-2"></i>Clear All
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Processing Progress -->
+                        <div id="processing-section" class="hidden space-y-6">
+                            <div class="flex items-center justify-center space-x-4">
+                                <div class="w-8 h-8 border-4 border-t-4 border-gray-600 border-t-indigo-500 rounded-full animate-spin"></div>
+                                <div class="text-white">
+                                    <div class="font-semibold" data-i18n="processing-title">Processing Documents...</div>
+                                    <div id="processing-status" class="text-sm text-gray-400" data-i18n="processing-starting">Starting...</div>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div id="overall-progress" class="progress-fill"></div>
+                            </div>
+                        </div>
+
+                        <!-- Results Section -->
+                        <div id="results-section" class="hidden space-y-6">
+                            <div class="flex justify-between items-center flex-wrap gap-4">
+                                <h3 class="text-2xl font-bold text-white" data-i18n="results-heading">Extraction Results</h3>
+                                <div class="flex flex-wrap space-x-3">
+                                    <button id="export-csv-button" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed" disabled data-i18n="export-csv-button">
+                                        <i class="fas fa-file-csv mr-2"></i>Export CSV
+                                    </button>
+                                    <button id="export-excel-button" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed" disabled data-i18n="export-excel-button">
+                                        <i class="fas fa-file-excel mr-2"></i>Export Excel
+                                    </button>
+                                    <button id="share-google-sheets-button" class="bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors hover:bg-yellow-700 disabled:bg-gray-600 disabled:cursor-not-allowed" disabled data-i18n="export-gsheets-button">
+                                        <i class="fab fa-google mr-2"></i>Google Sheets
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Summary Stats -->
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                                <div class="bg-gray-800 p-4 rounded-lg text-center">
+                                    <div id="total-processed" class="text-2xl font-bold text-indigo-400">0</div>
+                                    <div class="text-sm text-gray-400" data-i18n="stats-processed">Documents Processed</div>
+                                </div>
+                                <div class="bg-gray-800 p-4 rounded-lg text-center">
+                                    <div id="total-amount" class="text-2xl font-bold text-green-400">$0.00</div>
+                                    <div class="text-sm text-gray-400" data-i18n="stats-total-amount">Total Amount</div>
+                                </div>
+                                <div class="bg-gray-800 p-4 rounded-lg text-center">
+                                    <div id="avg-amount" class="text-2xl font-bold text-blue-400">$0.00</div>
+                                    <div class="text-sm text-gray-400" data-i18n="stats-avg-amount">Average Amount</div>
+                                </div>
+                                <div class="bg-gray-800 p-4 rounded-lg text-center">
+                                    <div id="unique-vendors" class="text-2xl font-bold text-purple-400">0</div>
+                                    <div class="text-sm text-gray-400" data-i18n="stats-unique-vendors">Unique Vendors</div>
+                                </div>
+                            </div>
+
+                            <!-- Results Table -->
+                            <div class="bg-gray-800 rounded-lg overflow-hidden">
+                                <div class="scrollable-results">
+                                    <table class="w-full text-left table-fixed">
+                                        <thead class="bg-gray-700 sticky top-0">
+                                            <tr>
+                                                <th class="w-1/4 px-4 py-3 text-white font-semibold" data-i18n="table-doc">Document</th>
+                                                <th class="w-1/4 px-4 py-3 text-white font-semibold" data-i18n="table-vendor">Vendor</th>
+                                                <th class="w-1/6 px-4 py-3 text-white font-semibold" data-i18n="table-date">Date</th>
+                                                <th class="w-1/6 px-4 py-3 text-white font-semibold" data-i18n="table-amount">Amount</th>
+                                                <th class="w-1/12 px-4 py-3 text-white font-semibold text-center" data-i18n="table-status">Status</th>
+                                                <th class="w-1/12 px-4 py-3 text-white font-semibold text-center" data-i18n="table-actions">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="results-table-body">
+                                            <!-- Results will be populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mt-6">
+                                <button id="process-more-button" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg transition-colors hover:bg-indigo-700" data-i18n="process-more-button">
+                                    <i class="fas fa-plus mr-2"></i>Process More Documents
+                                </button>
+                                <button id="clear-results-button" class="bg-red-600 text-white font-bold py-3 px-8 rounded-lg transition-colors hover:bg-red-700" data-i18n="clear-results-button">
+                                    <i class="fas fa-trash-alt mr-2"></i>Clear Results
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Detailed View Modal -->
+                        <div id="detail-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+                            <div class="bg-gray-900 p-6 rounded-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h3 class="text-xl font-bold text-white" data-i18n="modal-title">Document Details</h3>
+                                    <button id="close-modal" class="text-gray-400 hover:text-white">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div>
+                                        <h4 class="text-lg font-semibold text-white mb-4" data-i18n="modal-extracted-data-title">Extracted Data</h4>
+                                        <div id="modal-extracted-data" class="space-y-3">
+                                            <!-- Detailed extraction results will be shown here -->
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-lg font-semibold text-white mb-4" data-i18n="modal-original-doc-title">Original Document</h4>
+                                        <img id="modal-document-image" src="" alt="Document" class="rounded-lg shadow-lg max-h-96 w-full object-contain">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dynamic Content Sections -->
+        <section id="dynamic-sections" class="py-20 md:py-24 bg-gray-900 fade-in">
             <div class="container mx-auto px-4">
                 <div class="space-y-24">
                     <!-- Section 1: Enterprise Data -->
@@ -276,7 +521,7 @@
                         <div id="services-three-container-5" class="three-container"></div>
                         <div class="content">
                             <h3 class="text-xl font-bold mb-2 text-white" data-i18n="service-workflows-title">Workflow Automation Tools</h3>
-                            <p class="text-gray-400" data-i18n="service-workflows-text">Build or integrate with popular no-code/low-code tools for fast deployment, and offer custom AI plugins.</p>
+                            <p class="text-gray-400" data-i18n="service-workflows-text">Build or integrate with popular no-code/low-code tools for rapid deployment, and offer custom AI plugins.</p>
                         </div>
                     </div>
                     <!-- Service 6: AI-Driven Customer Support -->
@@ -284,7 +529,7 @@
                         <div id="services-three-container-6" class="three-container"></div>
                         <div class="content">
                             <h3 class="text-xl font-bold mb-2 text-white" data-i18n="service-support-title">AI-Driven Customer Support</h3>
-                            <p class="text-gray-400" data-i18n="service-support-text">Deploy multilingual AI agents and hybrid human/AI systems, including optional voice bots with LLMs.</p>
+                            <p class="text-gray-400" data-i18n="service-support-text">Deploy multilingual AI agents and human/AI hybrid systems, including optional voice bots with LLMs.</p>
                         </div>
                     </div>
                     <!-- Service 7: AI Compliance & Ethics -->
@@ -292,7 +537,7 @@
                         <div id="services-three-container-7" class="three-container"></div>
                         <div class="content">
                             <h3 class="text-xl font-bold mb-2 text-white" data-i18n="service-compliance-title">AI Compliance & Ethics</h3>
-                            <p class="text-gray-400" data-i18n="service-compliance-text">Help businesses adopt AI responsibly with audits, bias testing, and ethical deployment strategies.</p>
+                            <p class="text-gray-400" data-i18n="service-compliance-text">Help companies adopt AI responsibly with audits, bias testing, and ethical deployment strategies.</p>
                         </div>
                     </div>
                     <!-- Service 8: Generative AI for Business -->
@@ -322,22 +567,22 @@
                 <p class="text-gray-400 max-w-2xl mx-auto mb-8 text-white" data-i18n="contact-subtitle">
                     Contact our sales team to discuss your needs and see how Kognix can transform your business.
                 </p>
-                <form id="contact-form" class="max-w-xl mx-auto space-y-4" action="https://formspree.io/f/xkgzqdja" method="POST">
+                <form id="contact-form" class="max-w-xl mx-auto space-y-4">
                     <div>
                         <label for="name" class="sr-only" data-i18n="form-name-label">Name</label>
-                        <input type="text" id="name" name="name" class="w-full p-3 rounded-md bg-gray-800 border border-gray-700 text-gray-300 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" required data-i18n-placeholder="form-name-placeholder">
+                        <input type="text" id="name" name="name" placeholder="Your Name" class="w-full p-3 rounded-md bg-gray-800 border border-gray-700 text-gray-300 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" required data-i18n-placeholder="form-name-placeholder">
                     </div>
                     <div>
                         <label for="email" class="sr-only" data-i18n="form-email-label">Email</label>
-                        <input type="email" id="email" name="email" class="w-full p-3 rounded-md bg-gray-800 border border-gray-700 text-gray-300 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" required data-i18n-placeholder="form-email-placeholder">
+                        <input type="email" id="email" name="email" placeholder="Your Email" class="w-full p-3 rounded-md bg-gray-800 border border-gray-700 text-gray-300 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" required data-i18n-placeholder="form-email-placeholder">
                     </div>
                     <div>
                         <label for="phone" class="sr-only" data-i18n="form-phone-label">Phone</label>
-                        <input type="tel" id="phone" name="phone" class="w-full p-3 rounded-md bg-gray-800 border border-gray-700 text-gray-300 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" data-i18n-placeholder="form-phone-placeholder">
+                        <input type="tel" id="phone" name="phone" placeholder="Your Phone Number" class="w-full p-3 rounded-md bg-gray-800 border border-gray-700 text-gray-300 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" data-i18n-placeholder="form-phone-placeholder">
                     </div>
                     <div>
                         <label for="problem" class="sr-only" data-i18n="form-problem-label">Describe your problem</label>
-                        <textarea id="problem" name="problem" rows="5" class="w-full p-3 rounded-md bg-gray-800 border border-gray-700 text-gray-300 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" required data-i18n-placeholder="form-problem-placeholder"></textarea>
+                        <textarea id="problem" name="problem" rows="5" placeholder="Describe your problem so we can get back to you" class="w-full p-3 rounded-md bg-gray-800 border border-gray-700 text-gray-300 placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none transition-colors" required data-i18n-placeholder="form-problem-placeholder"></textarea>
                     </div>
                     <button type="submit" class="bg-[#3b82f6] hover:bg-[#1e40af] text-white font-bold py-3 px-8 rounded-md transition-colors duration-300 shadow-lg" data-i18n="form-submit-button">Send Message</button>
                     <p id="form-status" class="mt-4 text-sm font-semibold text-green-400 hidden" data-i18n="form-success-message">Our team will get back to you shortly!</p>
@@ -350,10 +595,9 @@
     <footer class="bg-gray-950 py-12">
         <div class="container mx-auto px-4 text-center border-t border-gray-800 pt-8">
             <div class="flex justify-center space-x-6 mb-4">
-                <!-- Removed Facebook and Twitter links -->
-                <a href="https://www.linkedin.com/company/knognix/" class="text-gray-400 hover:text-white transition-colors"><i class="fab fa-linkedin-in"></i></a>
+                <a href="#" class="text-gray-400 hover:text-white transition-colors"><i class="fab fa-linkedin-in"></i></a>
             </div>
-            <p class="text-sm text-gray-500">&copy; 2024 Kognix. All rights reserved.</p>
+            <p class="text-sm text-gray-500" data-i18n="footer-text">&copy; 2024 Kognix. All rights reserved.</p>
         </div>
     </footer>
 
@@ -365,11 +609,43 @@
                 "nav-platform": "Platform",
                 "nav-pricing": "Pricing",
                 "nav-contact": "Contact",
-                "nav-demo": "Request Demo",
+                "nav-demo": "Try the MVP",
                 "hero-headline": "Breakthrough AI from Data to Deployment.",
                 "hero-subheadline": "Kognix is building the AI platform to deliver proven data, evaluations, and outcomes to AI labs, governments, and enterprises.",
-                "hero-cta-demo": "Book a Demo",
+                "hero-cta-demo": "Try the MVP",
                 "hero-cta-build": "Build with AI →",
+                "mvp-title": "Advanced Invoice Processing AI",
+                "mvp-subtitle": "Upload multiple invoices, receipts, or business documents and watch our AI extract key information instantly. Export results to CSV or Google Sheets.",
+                "drop-text": "Drop your invoices here",
+                "or-text": "or",
+                "browse-text": "Browse files",
+                "support-text": "Supports: Images (JPG, PNG), PDF documents",
+                "uploaded-files-heading": "Uploaded Files",
+                "process-button": "Process All Documents",
+                "clear-button": "Clear All",
+                "processing-title": "Processing Documents...",
+                "processing-starting": "Starting...",
+                "processing-file": "Processing {fileName}...",
+                "processing-completed": "Processing completed!",
+                "results-heading": "Extraction Results",
+                "export-csv-button": "Export CSV",
+                "export-excel-button": "Export Excel",
+                "export-gsheets-button": "Google Sheets",
+                "stats-processed": "Documents Processed",
+                "stats-total-amount": "Total Amount",
+                "stats-avg-amount": "Average Amount",
+                "stats-unique-vendors": "Unique Vendors",
+                "table-doc": "Document",
+                "table-vendor": "Vendor",
+                "table-date": "Date",
+                "table-amount": "Amount",
+                "table-status": "Status",
+                "table-actions": "Actions",
+                "process-more-button": "Process More Documents",
+                "clear-results-button": "Clear Results",
+                "modal-title": "Document Details",
+                "modal-extracted-data-title": "Extracted Data",
+                "modal-original-doc-title": "Original Document",
                 "section-data-title": "Enterprise Data",
                 "section-data-text": "Kognix's Data Engine enables you to integrate your enterprise data into the fold of these models, providing the base for long-term strategic differentiation.",
                 "section-models-title": "Foundation Models",
@@ -387,54 +663,17 @@
                 "service-saas-title": "AI Integration for SaaS",
                 "service-saas-text": "Embed AI features like smart search, voice-to-text, and content summarization into your existing SaaS tools.",
                 "service-workflows-title": "Workflow Automation Tools",
-                "service-workflows-text": "Build or integrate with popular no-code/low-code tools for fast deployment, and offer custom AI plugins.",
+                "service-workflows-text": "Build or integrate with popular no-code/low-code tools for rapid deployment, and offer custom AI plugins.",
                 "service-support-title": "AI-Driven Customer Support",
-                "service-support-text": "Deploy multilingual AI agents and hybrid human/AI systems, including optional voice bots with LLMs.",
+                "service-support-text": "Deploy multilingual AI agents and human/AI hybrid systems, including optional voice bots with LLMs.",
                 "service-compliance-title": "AI Compliance & Ethics",
-                "service-compliance-text": "Help businesses adopt AI responsibly with audits, bias testing, and ethical deployment strategies.",
+                "service-compliance-text": "Help companies adopt AI responsibly with audits, bias testing, and ethical deployment strategies.",
                 "service-genai-title": "Generative AI for Business",
                 "service-genai-text": "Build internal tools and custom copilots using large language models for customer service, HR, and marketing.",
                 "service-training-title": "AI Talent & Training",
                 "service-training-text": "Provide training sessions and certifications for companies adopting AI, with upskilling programs for internal teams.",
-                "pricing-title": "Pricing that Scales with You.",
-                "pricing-subtitle": "Choose a plan that fits your business, with transparent pricing and no hidden fees.",
-                "pricing-month": "/ month",
-                "pricing-free-title": "Free",
-                "pricing-free-subtitle": "Perfect for testing the core platform.",
-                "pricing-free-cta": "Get Started",
-                "pricing-starter-feature-1": "100 workflow runs/month",
-                "pricing-starter-feature-2": "1 user",
-                "pricing-starter-feature-3": "3 basic integrations",
-                "pricing-starter-feature-4": "No priority support",
-                "pricing-starter-feature-5": "No advanced AI features",
-                "pricing-growth-title": "Growth",
-                "pricing-growth-subtitle": "For growing teams and SMBs.",
-                "pricing-growth-cta": "Get Started",
-                "pricing-growth-feature-1": "5,000 workflow runs/month",
-                "pricing-growth-feature-2": "Up to 5 user seats",
-                "pricing-growth-feature-3": "All integrations",
-                "pricing-growth-feature-4": "Conditional logic & loops",
-                "pricing-growth-feature-5": "Advanced AI features (limited)",
-                "pricing-pro-title": "Pro",
-                "pricing-pro-subtitle": "AI Ready Growth Leaders.",
-                "pricing-pro-cta": "Get Started",
-                "pricing-pro-feature-1": "50,000 workflow runs/month",
-                "pricing-pro-feature-2": "Up to 15 user seats",
-                "pricing-pro-feature-3": "Full access to AI services",
-                "pricing-pro-feature-4": "Priority support",
-                "pricing-pro-feature-5": "AI Copilot & analytics",
-                "pricing-enterprise-title": "Enterprise",
-                "pricing-enterprise-subtitle": "For large-scale organizations.",
-                "pricing-enterprise-price": "Custom",
-                "pricing-enterprise-cta": "Contact Sales",
-                "pricing-enterprise-feature-1": "Unlimited usage",
-                "pricing-enterprise-feature-2": "Dedicated account manager",
-                "pricing-enterprise-feature-3": "Custom integrations & models",
-                "pricing-enterprise-feature-4": "On-premise deployment",
-                "pricing-enterprise-feature-5": "24/7 priority support",
                 "contact-title": "Ready to Get Started?",
                 "contact-subtitle": "Contact our sales team to discuss your needs and see how Kognix can transform your business.",
-                "contact-cta": "Contact Us",
                 "form-name-label": "Name",
                 "form-name-placeholder": "Your Name",
                 "form-email-label": "Email",
@@ -445,17 +684,50 @@
                 "form-problem-placeholder": "Describe your problem so we can get back to you",
                 "form-submit-button": "Send Message",
                 "form-success-message": "Our team will get back to you shortly!",
+                "footer-text": "&copy; 2024 Kognix. All rights reserved.",
             },
             fr: {
                 "nav-services": "Services",
                 "nav-platform": "Plateforme",
                 "nav-pricing": "Tarifs",
                 "nav-contact": "Contact",
-                "nav-demo": "Demander une démo",
+                "nav-demo": "Essayer l'MVP",
                 "hero-headline": "L'IA Révolutionnaire de la Donnée au Déploiement.",
-                "hero-subheadline": "Kognix construit la plateforme IA pour offrir des données, des évaluations et des résultats prouvés aux laboratoires d'IA, aux gouvernements et aux entreprises du Fortune 500.",
-                "hero-cta-demo": "Réserver une démo",
+                "hero-subheadline": "Kognix construit la plateforme IA pour offrir des données, des évaluations et des résultats prouvés aux laboratoires d'IA, aux gouvernements et aux entreprises.",
+                "hero-cta-demo": "Essayer l'MVP",
                 "hero-cta-build": "Créer avec l'IA →",
+                "mvp-title": "IA avancée de traitement des factures",
+                "mvp-subtitle": "Téléchargez plusieurs factures, reçus ou documents commerciaux et regardez notre IA extraire instantanément les informations clés. Exportez les résultats vers CSV ou Google Sheets.",
+                "drop-text": "Déposez vos factures ici",
+                "or-text": "ou",
+                "browse-text": "Parcourir les fichiers",
+                "support-text": "Formats supportés : Images (JPG, PNG), documents PDF",
+                "uploaded-files-heading": "Fichiers téléchargés",
+                "process-button": "Traiter tous les documents",
+                "clear-button": "Tout effacer",
+                "processing-title": "Traitement des documents...",
+                "processing-starting": "Démarrage...",
+                "processing-file": "Traitement de {fileName}...",
+                "processing-completed": "Traitement terminé !",
+                "results-heading": "Résultats d'extraction",
+                "export-csv-button": "Exporter CSV",
+                "export-excel-button": "Exporter Excel",
+                "export-gsheets-button": "Google Sheets",
+                "stats-processed": "Documents traités",
+                "stats-total-amount": "Montant total",
+                "stats-avg-amount": "Montant moyen",
+                "stats-unique-vendors": "Fournisseurs uniques",
+                "table-doc": "Document",
+                "table-vendor": "Fournisseur",
+                "table-date": "Date",
+                "table-amount": "Montant",
+                "table-status": "Statut",
+                "table-actions": "Actions",
+                "process-more-button": "Traiter d'autres documents",
+                "clear-results-button": "Effacer les résultats",
+                "modal-title": "Détails du document",
+                "modal-extracted-data-title": "Données extraites",
+                "modal-original-doc-title": "Document original",
                 "section-data-title": "Données d'entreprise",
                 "section-data-text": "Le moteur de données de Kognix vous permet d'intégrer les données de votre entreprise dans ces modèles, posant ainsi la base d'une différenciation stratégique à long terme.",
                 "section-models-title": "Modèles fondamentaux",
@@ -469,11 +741,9 @@
                 "service-custom-title": "Solutions IA personnalisées",
                 "service-custom-text": "Développez des modèles d'IA sur mesure pour des besoins métier spécifiques comme le NLP, la vision par ordinateur et la prévision.",
                 "service-analytics-title": "Analyse de données pilotée par l'IA",
-                "service-analytics-text": "Utilisez l'apprentissage automatique pour l'analyse prédictive et l'intelligence décisionnelle, comme la prédiction de désabonnement et la détection d'anomalies.",
+                "service-analytics-text": "Utilisez l'apprentissage automatique pour l'analyse prédictive et l'aide à la décision, comme la prédiction de l'attrition et la détection d'anomalies.",
                 "service-saas-title": "Intégration d'IA pour les plateformes SaaS",
                 "service-saas-text": "Intégrez des fonctionnalités d'IA comme la recherche intelligente, la conversion de la voix en texte et la synthèse de contenu dans vos outils SaaS existants.",
-                "service-workflows-title": "Outils d'automatisation des flux de travail",
-                "service-workflows-text": "Créez ou intégrez des outils sans code/à faible code pour un déploiement rapide, et proposez des plugins IA personnalisés.",
                 "service-support-title": "Solutions de support client IA",
                 "service-support-text": "Déployez des agents IA multilingues et des systèmes hybrides humain/IA, y compris des robots vocaux optionnels avec des LLM.",
                 "service-compliance-title": "Conseil en conformité et éthique IA",
@@ -481,145 +751,106 @@
                 "service-genai-title": "IA Générative pour les entreprises",
                 "service-genai-text": "Créez des outils internes et des copilotes personnalisés à l'aide de grands modèles de langage pour le service client, les RH et le marketing.",
                 "service-training-title": "Programmes de formation et de talent IA",
-                "service-training-text": "Fournissez des sessions de formation et des certifications aux entreprises adoptant l'IA, avec des programmes de perfectionnement pour les équipes internes.",
-                "pricing-title": "Tarifs qui évoluent avec vous.",
-                "pricing-subtitle": "Choisissez un plan qui correspond à votre entreprise, avec des tarifs transparents et sans frais cachés.",
-                "pricing-month": "/ mois",
-                "pricing-free-title": "Gratuit",
-                "pricing-free-subtitle": "Parfait pour tester le cœur de la plateforme.",
-                "pricing-free-cta": "Commencer",
-                "pricing-starter-feature-1": "100 exécutions de flux de travail/mois",
-                "pricing-starter-feature-2": "1 utilisateur",
-                "pricing-starter-feature-3": "3 intégrations de base",
-                "pricing-starter-feature-4": "Support prioritaire",
-                "pricing-starter-feature-5": "Fonctionnalités IA avancées",
-                "pricing-growth-title": "Croissance",
-                "pricing-growth-subtitle": "Pour les équipes en croissance et PME.",
-                "pricing-growth-cta": "Commencer",
-                "pricing-growth-feature-1": "5,000 exécutions de flux/mois",
-                "pricing-growth-feature-2": "Jusqu'à 5 utilisateurs",
-                "pricing-growth-feature-3": "Toutes les intégrations",
-                "pricing-growth-feature-4": "Logique conditionnelle et boucles",
-                "pricing-growth-feature-5": "Fonctionnalités IA avancées (limitées)",
-                "pricing-pro-title": "Pro",
-                "pricing-pro-subtitle": "For scaling businesses and AI-driven enterprises.",
-                "pricing-pro-cta": "Get Started",
-                "pricing-pro-feature-1": "50,000 exécutions de flux/mois",
-                "pricing-pro-feature-2": "Jusqu'à 15 utilisateurs",
-                "pricing-pro-feature-3": "Accès complet aux services IA",
-                "pricing-pro-feature-4": "Support prioritaire",
-                "pricing-pro-feature-5": "Copilote IA et analytique",
-                "pricing-enterprise-title": "Entreprise",
-                "pricing-enterprise-subtitle": "Pour les grandes organisations.",
-                "pricing-enterprise-price": "Sur mesure",
-                "pricing-enterprise-cta": "Contacter les ventes",
-                "pricing-enterprise-feature-1": "Utilisation illimitée",
-                "pricing-enterprise-feature-2": "Gestionnaire de compte dédié",
-                "pricing-enterprise-feature-3": "Intégrations et modèles personnalisés",
-                "pricing-enterprise-feature-4": "Déploiement sur site",
-                "pricing-enterprise-feature-5": "Support 24/7",
+                "service-training-text": "Fournissez des sessions de formation et des certifications pour les entreprises adoptant l'IA, avec des programmes de perfectionnement pour les équipes internes.",
                 "contact-title": "Prêt à commencer ?",
-                "contact-subtitle": "Contactez notre équipe commerciale pour discuter de vos besoins et découvrir comment Kognix peut transformer votre entreprise.",
-                "contact-cta": "Nous contacter",
+                "contact-subtitle": "Contactez notre équipe de vente pour discuter de vos besoins et découvrir comment Kognix peut transformer votre entreprise.",
                 "form-name-label": "Nom",
-                "form-name-placeholder": "Votre Nom",
-                "form-email-label": "E-mail",
-                "form-email-placeholder": "Votre E-mail",
+                "form-name-placeholder": "Votre nom",
+                "form-email-label": "Email",
+                "form-email-placeholder": "Votre email",
                 "form-phone-label": "Téléphone",
-                "form-phone-placeholder": "Votre Numéro de Téléphone",
+                "form-phone-placeholder": "Votre numéro de téléphone",
                 "form-problem-label": "Décrivez votre problème",
-                "form-problem-placeholder": "Décrivez votre problème afin que nous puissions vous recontacter",
-                "form-submit-button": "Envoyer le Message",
+                "form-problem-placeholder": "Décrivez votre problème afin que nous puissions vous répondre",
+                "form-submit-button": "Envoyer le message",
                 "form-success-message": "Notre équipe vous recontactera sous peu !",
+                "footer-text": "&copy; 2024 Kognix. Tous les droits réservés.",
             },
             es: {
                 "nav-services": "Servicios",
                 "nav-platform": "Plataforma",
                 "nav-pricing": "Precios",
                 "nav-contact": "Contacto",
-                "nav-demo": "Solicitar Demo",
-                "hero-headline": "IA Revolucionaria: Del Dato al Despliegue.",
-                "hero-subheadline": "Kognix está construyendo la plataforma de IA para ofrecer datos, evaluaciones y resultados probados a laboratorios de IA, gobiernos y empresas.",
-                "hero-cta-demo": "Reservar una Demo",
+                "nav-demo": "Probar el MVP",
+                "hero-headline": "IA innovadora desde los datos hasta la implementación.",
+                "hero-subheadline": "Kognix está construyendo la plataforma de IA para ofrecer datos probados, evaluaciones y resultados a laboratorios de IA, gobiernos y empresas.",
+                "hero-cta-demo": "Probar el MVP",
                 "hero-cta-build": "Construir con IA →",
-                "section-data-title": "Datos Empresariales",
-                "section-data-text": "El Motor de Datos de Kognix le permite integrar sus datos empresariales en estos modelos, proporcionando la base para una diferenciación estratégica a largo plazo.",
-                "section-models-title": "Modelos Fundacionales",
-                "section-models-text": "Kognix se asocia o integra con todos los modelos de IA líderes, desde código abierto hasta código cerrado, incluyendo Google, Meta y más.",
-                "section-tuning-title": "Ajuste Fino y RLHF",
-                "section-tuning-text": "Adapte los mejores modelos fundacionales a su negocio y a sus datos específicos para construir programas de IA sostenibles y exitosos.",
-                "services-title": "Nuestros Servicios Integrales.",
-                "services-subtitle": "Ofrecemos un conjunto completo de servicios de IA y automatización para ayudar a las empresas a prosperar.",
-                "service-rpa-title": "Automatización de Procesos con IA",
-                "service-rpa-text": "Automatice procesos de negocio repetitivos utilizando la Automatización Robótica de Procesos mejorada con IA.",
-                "service-custom-title": "Soluciones de IA Personalizadas",
-                "service-custom-text": "Desarrolle modelos de IA a medida para necesidades específicas del negocio como PNL, visión por computadora y pronóstico.",
-                "service-analytics-title": "Análisis de Datos con IA",
+                "mvp-title": "IA avanzada de procesamiento de facturas",
+                "mvp-subtitle": "Cargue varias facturas, recibos o documentos comerciales y observe cómo nuestra IA extrae información clave al instante. Exporte los resultados a CSV o Hojas de cálculo de Google.",
+                "drop-text": "Arrastre sus facturas aquí",
+                "or-text": "o",
+                "browse-text": "Explorar archivos",
+                "support-text": "Formatos compatibles: Imágenes (JPG, PNG), documentos PDF",
+                "uploaded-files-heading": "Archivos cargados",
+                "process-button": "Procesar todos los documentos",
+                "clear-button": "Borrar todo",
+                "processing-title": "Procesando documentos...",
+                "processing-starting": "Empezando...",
+                "processing-file": "Procesando {fileName}...",
+                "processing-completed": "Procesamiento completado!",
+                "results-heading": "Resultados de extracción",
+                "export-csv-button": "Exportar CSV",
+                "export-excel-button": "Exportar Excel",
+                "export-gsheets-button": "Hojas de cálculo de Google",
+                "stats-processed": "Documentos procesados",
+                "stats-total-amount": "Cantidad total",
+                "stats-avg-amount": "Cantidad promedio",
+                "stats-unique-vendors": "Proveedores únicos",
+                "table-doc": "Documento",
+                "table-vendor": "Proveedor",
+                "table-date": "Fecha",
+                "table-amount": "Cantidad",
+                "table-status": "Estado",
+                "table-actions": "Acciones",
+                "process-more-button": "Procesar más documentos",
+                "clear-results-button": "Borrar resultados",
+                "modal-title": "Detalles del documento",
+                "modal-extracted-data-title": "Datos extraídos",
+                "modal-original-doc-title": "Documento original",
+                "section-data-title": "Datos empresariales",
+                "section-data-text": "El motor de datos de Kognix le permite integrar sus datos empresariales en estos modelos, proporcionando la base para una diferenciación estratégica a largo plazo.",
+                "section-models-title": "Modelos de base",
+                "section-models-text": "Kognix se asocia o integra con todos los principales modelos de IA, desde código abierto hasta código cerrado, incluyendo Google, Meta y más.",
+                "section-tuning-title": "Ajuste fino y RLHF",
+                "section-tuning-text": "Adapte los mejores modelos de base a su negocio y sus datos específicos para construir programas de IA sostenibles y exitosos.",
+                "services-title": "Nuestros servicios completos.",
+                "services-subtitle": "Ofrecemos una suite completa de servicios de IA y automatización para ayudar a las empresas a prosperar.",
+                "service-rpa-title": "Automatización de procesos con IA",
+                "service-rpa-text": "Automatice procesos de negocio repetitivos utilizando la automatización robótica de procesos mejorada con IA.",
+                "service-custom-title": "Soluciones de IA personalizadas",
+                "service-custom-text": "Desarrolle modelos de IA a medida para necesidades de negocio específicas como PNL, visión por ordenador y pronósticos.",
+                "service-analytics-title": "Análisis de datos con IA",
                 "service-analytics-text": "Utilice el aprendizaje automático para análisis predictivos e inteligencia de decisiones, como la predicción de abandono y la detección de anomalías.",
-                "service-saas-title": "Integración de IA para Plataformas SaaS",
-                "service-saas-text": "Incorpore funciones de IA como búsqueda inteligente, voz a texto y resumen de contenido en sus herramientas SaaS existentes.",
-                "service-workflows-title": "Herramientas de Automatización de Flujos de Trabajo",
-                "service-workflows-text": "Construya o integre con herramientas populares de no-code/low-code para un despliegue rápido, y ofrezca plugins de IA personalizados.",
-                "service-support-title": "Soporte al Cliente Impulsado por IA",
-                "service-support-text": "Despliegue agentes de IA multilingües y sistemas híbridos humano/IA, incluyendo bots de voz opcionales con LLMs.",
-                "service-compliance-title": "Cumplimiento y Ética de la IA",
-                "service-compliance-text": "Ayude a las empresas a adoptar la IA de manera responsable con auditorías, pruebas de sesgos y estrategias de despliegue ético.",
-                "service-genai-title": "IA Generativa para Empresas",
-                "service-genai-text": "Construya herramientas internas y copilotos personalizados utilizando grandes modelos de lenguaje para servicio al cliente, RRHH y marketing.",
-                "service-training-title": "Talento y Programas de Capacitación en IA",
-                "service-training-text": "Ofrezca sesiones de capacitación y certificaciones para empresas que adoptan la IA, con programas de mejora de habilidades para equipos internos.",
-                "pricing-title": "Precios que Escalan con Usted.",
-                "pricing-subtitle": "Elija un plan que se adapte a su negocio, con precios transparentes y sin tarifas ocultas.",
-                "pricing-month": "/ mes",
-                "pricing-free-title": "Gratis",
-                "pricing-free-subtitle": "Perfecto para probar la plataforma principal.",
-                "pricing-free-cta": "Empezar",
-                "pricing-starter-feature-1": "100 ejecuciones de flujo de trabajo/mes",
-                "pricing-starter-feature-2": "1 usuario",
-                "pricing-starter-feature-3": "3 integraciones básicas",
-                "pricing-starter-feature-4": "Soporte prioritario",
-                "pricing-starter-feature-5": "Funciones avanzadas de IA",
-                "pricing-growth-title": "Crecimiento",
-                "pricing-growth-subtitle": "Para equipos en crecimiento y PYMES.",
-                "pricing-growth-cta": "Empezar",
-                "pricing-growth-feature-1": "5,000 ejecuciones de flujo de trabajo/mes",
-                "pricing-growth-feature-2": "Hasta 5 usuarios",
-                "pricing-growth-feature-3": "Todas las integraciones",
-                "pricing-growth-feature-4": "Lógica condicional y bucles",
-                "pricing-growth-feature-5": "Funciones avanzadas de IA (limitadas)",
-                "pricing-pro-title": "Pro",
-                "pricing-pro-subtitle": "Para empresas en crecimiento y empresas impulsadas por IA.",
-                "pricing-pro-cta": "Empezar",
-                "pricing-pro-feature-1": "50,000 ejecuciones de flujo de trabajo/mes",
-                "pricing-pro-feature-2": "Hasta 15 usuarios",
-                "pricing-pro-feature-3": "Acceso completo a servicios de IA",
-                "pricing-pro-feature-4": "Soporte prioritario",
-                "pricing-pro-feature-5": "Copiloto de IA y análisis",
-                "pricing-enterprise-title": "Empresarial",
-                "pricing-enterprise-subtitle": "Para organizaciones a gran escala.",
-                "pricing-enterprise-price": "Personalizado",
-                "pricing-enterprise-cta": "Contactar Ventas",
-                "pricing-enterprise-feature-1": "Uso ilimitado",
-                "pricing-enterprise-feature-2": "Gerente de cuenta dedicado",
-                "pricing-enterprise-feature-3": "Integraciones y modelos personalizados",
-                "pricing-enterprise-feature-4": "Despliegue en las instalaciones",
-                "pricing-enterprise-feature-5": "Soporte 24/7",
-                "contact-title": "¿Listo para Empezar?",
-                "contact-subtitle": "Contacte a nuestro equipo de ventas para discutir sus necesidades y ver cómo Kognix puede transformar su negocio.",
-                "contact-cta": "Contáctenos",
+                "service-saas-title": "Integración de IA para plataformas SaaS",
+                "service-saas-text": "Integre funciones de IA como búsqueda inteligente, voz a texto y resumen de contenido en sus herramientas SaaS existentes.",
+                "service-workflows-title": "Herramientas de automatización de flujos de trabajo",
+                "service-workflows-text": "Construya o integre con herramientas populares sin código/de bajo código para una implementación rápida y ofrezca complementos de IA personalizados.",
+                "service-support-title": "Soporte al cliente con IA",
+                "service-support-text": "Despliegue agentes de IA multilingues y sistemas híbridos humano/IA, incluyendo bots de voz opcionales con LLMs.",
+                "service-compliance-title": "Cumplimiento y ética de la IA",
+                "service-compliance-text": "Ayude a las empresas a adoptar la IA de manera responsable con auditorías, pruebas de sesgo y estrategias de implementación éticas.",
+                "service-genai-title": "IA generativa para empresas",
+                "service-genai-text": "Cree herramientas internas y copilotos personalizados utilizando grandes modelos de lenguaje para servicio al cliente, recursos humanos y marketing.",
+                "service-training-title": "Talento y programas de formación en IA",
+                "service-training-text": "Proporcione sesiones de formación y certificaciones para empresas que adoptan la IA, con programas de mejora de habilidades para equipos internos.",
+                "contact-title": "¿Listo para empezar?",
+                "contact-subtitle": "Contacte con nuestro equipo de ventas para discutir sus necesidades y ver cómo Kognix puede transformar su negocio.",
                 "form-name-label": "Nombre",
-                "form-name-placeholder": "Su Nombre",
+                "form-name-placeholder": "Su nombre",
                 "form-email-label": "Correo electrónico",
-                "form-email-placeholder": "Su Correo electrónico",
+                "form-email-placeholder": "Su correo electrónico",
                 "form-phone-label": "Teléfono",
-                "form-phone-placeholder": "Su Número de Teléfono",
+                "form-phone-placeholder": "Su número de teléfono",
                 "form-problem-label": "Describa su problema",
                 "form-problem-placeholder": "Describa su problema para que podamos ponernos en contacto con usted",
-                "form-submit-button": "Enviar Mensaje",
+                "form-submit-button": "Enviar mensaje",
                 "form-success-message": "¡Nuestro equipo se pondrá en contacto con usted en breve!",
+                "footer-text": "&copy; 2024 Kognix. Todos los derechos reservados.",
             }
         };
 
+        // Function to translate the page content
         const setLanguage = (lang) => {
             // Translate elements with data-i18n attribute
             document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -639,7 +870,14 @@
 
             // Update the current language text in the button
             document.getElementById('current-lang-text').textContent = lang.toUpperCase();
+
+            // Store the selected language
+            localStorage.setItem('kognix-lang', lang);
         };
+        
+        // On page load, set the language from localStorage or default to 'en'
+        const initialLang = localStorage.getItem('kognix-lang') || 'en';
+        setLanguage(initialLang);
 
         // JavaScript for mobile menu toggle
         const mobileMenuButton = document.getElementById('mobile-menu-button');
@@ -695,13 +933,13 @@
             const setupThree = (containerId, geometryCreator, color) => {
                 const container = document.getElementById(containerId);
                 if (!container) return;
-            
+        
                 const scene = new THREE.Scene();
                 const camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 0.1, 1000);
                 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
                 renderer.setSize(container.offsetWidth, container.offsetHeight);
                 container.appendChild(renderer.domElement);
-            
+        
                 const material = new THREE.MeshPhysicalMaterial({
                     color: color,
                     metalness: 0.9,
@@ -713,29 +951,29 @@
                 });
                 const mesh = new THREE.Mesh(geometryCreator(), material);
                 scene.add(mesh);
-            
+        
                 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
                 scene.add(ambientLight);
-            
+        
                 const pointLight = new THREE.PointLight(0xa78bfa, 1);
                 pointLight.position.set(5, 5, 5);
                 scene.add(pointLight);
-            
+        
                 camera.position.z = 5;
-            
+        
                 window.addEventListener('resize', () => {
                     camera.aspect = container.offsetWidth / container.offsetHeight;
                     camera.updateProjectionMatrix();
                     renderer.setSize(container.offsetWidth, container.offsetHeight);
                 });
-            
+        
                 const animate = () => {
                     requestAnimationFrame(animate);
                     mesh.rotation.x += 0.005;
                     mesh.rotation.y += 0.005;
                     renderer.render(scene, camera);
                 };
-            
+        
                 animate();
             };
 
@@ -760,71 +998,648 @@
             // Setup Three.js for services section
             setupThree('services-three-container-1', getTorusGeometry, 0x8b5cf6);
             setupThree('services-three-container-2', getDodecahedronGeometry, 0x3b82f6);
-            setupThree('services-three-container-3', getSphereGeometry, 0x8b5cf6);
-            setupThree('services-three-container-4', getCylinderGeometry, 0x3b82f6);
-            setupThree('services-three-container-5', getOctahedronGeometry, 0xa78bfa);
-            setupThree('services-three-container-6', getConeGeometry, 0x8b5cf6);
-            setupThree('services-three-container-7', getRingGeometry, 0x3b82f6);
-            setupThree('services-three-container-8', getIcosahedronGeometry, 0xa78bfa);
-            setupThree('services-three-container-9', getBoxGeometry, 0x8b5cf6);
-
-            // Set initial language to English on load
-            setLanguage('en');
+            setupThree('services-three-container-3', getSphereGeometry, 0xa78bfa);
+            setupThree('services-three-container-4', getCylinderGeometry, 0x8b5cf6);
+            setupThree('services-three-container-5', getOctahedronGeometry, 0x3b82f6);
+            setupThree('services-three-container-6', getConeGeometry, 0xa78bfa);
+            setupThree('services-three-container-7', getRingGeometry, 0x8b5cf6);
+            setupThree('services-three-container-8', getIcosahedronGeometry, 0x3b82f6);
+            setupThree('services-three-container-9', getBoxGeometry, 0xa78bfa);
         };
 
-        // Contact Form Submission Logic
-        document.getElementById('contact-form').addEventListener('submit', async function(event) {
-            event.preventDefault(); // Prevent default form submission
+        // --- MVP Application Logic ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const invoiceProcessor = new InvoiceProcessor();
+            window.invoiceProcessor = invoiceProcessor; // Make it globally accessible for event listeners
+        });
 
-            const form = event.target;
-            const formStatus = document.getElementById('form-status');
-            const submitButton = form.querySelector('button[type="submit"]');
+        // The main class for the invoice processing application
+        class InvoiceProcessor {
+            constructor() {
+                this.files = [];
+                this.results = [];
+                this.isProcessing = false;
+                this.currentFileIndex = 0;
+                
+                this.initializeElements();
+                this.setupEventListeners();
+                this.setupDragAndDrop();
+            }
 
-            // Disable button and show loading state
-            submitButton.disabled = true;
-            submitButton.textContent = 'Sending...';
-            formStatus.classList.add('hidden'); // Hide previous status message
+            // A more robust way to define methods to ensure 'this' is always the class instance
+            initializeElements = () => {
+                // UI Elements
+                this.fileInput = document.getElementById('file-upload');
+                this.fileList = document.getElementById('file-list');
+                this.filesContainer = document.getElementById('files-container');
+                this.processAllButton = document.getElementById('process-all-button');
+                this.clearAllButton = document.getElementById('clear-all-button');
+                
+                this.uploadSection = document.getElementById('upload-section');
+                this.processingSection = document.getElementById('processing-section');
+                this.resultsSection = document.getElementById('results-section');
+                
+                this.processingStatus = document.getElementById('processing-status');
+                this.overallProgress = document.getElementById('overall-progress');
+                
+                // Results elements
+                this.totalProcessed = document.getElementById('total-processed');
+                this.totalAmount = document.getElementById('total-amount');
+                this.avgAmount = document.getElementById('avg-amount');
+                this.uniqueVendors = document.getElementById('unique-vendors');
+                this.resultsTableBody = document.getElementById('results-table-body');
+                
+                // Export buttons
+                this.exportCSVButton = document.getElementById('export-csv-button');
+                this.exportExcelButton = document.getElementById('export-excel-button');
+                this.shareGoogleSheetsButton = document.getElementById('share-google-sheets-button');
+                
+                // Action buttons
+                this.processMoreButton = document.getElementById('process-more-button');
+                this.clearResultsButton = document.getElementById('clear-results-button');
+                
+                // Modal elements
+                this.detailModal = document.getElementById('detail-modal');
+                this.closeModal = document.getElementById('close-modal');
+                this.modalExtractedData = document.getElementById('modal-extracted-data');
+                this.modalDocumentImage = document.getElementById('modal-document-image');
+            }
 
-            // Formspree endpoint from your provided link
-            const formspreeEndpoint = 'https://formspree.io/f/xkgzqdja'; 
+            setupEventListeners = () => {
+                this.fileInput.addEventListener('change', (e) => this.addFiles(Array.from(e.target.files)));
+                this.processAllButton.addEventListener('click', () => this.processAllDocuments());
+                this.clearAllButton.addEventListener('click', () => this.clearAllFiles());
+                
+                // Export button listeners
+                this.exportCSVButton.addEventListener('click', () => this.exportToCSV());
+                this.exportExcelButton.addEventListener('click', () => this.exportToExcel());
+                this.shareGoogleSheetsButton.addEventListener('click', () => this.shareToGoogleSheets());
+                
+                // Action button listeners
+                this.processMoreButton.addEventListener('click', () => this.resetToUpload());
+                this.clearResultsButton.addEventListener('click', () => this.clearResults());
+                
+                // Modal listeners
+                this.closeModal.addEventListener('click', () => this.hideModal());
+                this.detailModal.addEventListener('click', (e) => {
+                    if (e.target === this.detailModal) this.hideModal();
+                });
+            }
 
-            try {
-                const response = await fetch(formspreeEndpoint, {
-                    method: 'POST',
-                    body: new FormData(form), // Formspree handles FormData directly
-                    headers: {
-                        'Accept': 'application/json' // Important for Formspree to return JSON response
+            setupDragAndDrop = () => {
+                const uploadArea = this.uploadSection.querySelector('.border-dashed');
+                
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    uploadArea.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                });
+
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    uploadArea.addEventListener(eventName, () => {
+                        uploadArea.classList.add('border-indigo-500');
+                    });
+                });
+
+                ['dragleave', 'drop'].forEach(eventName => {
+                    uploadArea.addEventListener(eventName, () => {
+                        uploadArea.classList.remove('border-indigo-500');
+                    });
+                });
+
+                uploadArea.addEventListener('drop', (e) => {
+                    const files = e.dataTransfer.files;
+                    this.addFiles(Array.from(files));
+                });
+            }
+
+            addFiles = (newFiles) => {
+                // Filter valid files
+                const validFiles = newFiles.filter(file => {
+                    return file.type.startsWith('image/') || file.type === 'application/pdf';
+                });
+
+                if (validFiles.length === 0) {
+                    this.showNotification(this.getTranslation('invalid-files-message'), 'error');
+                    return;
+                }
+
+                // Add files with unique IDs
+                validFiles.forEach(file => {
+                    const fileId = Date.now() + Math.random();
+                    this.files.push({
+                        id: fileId,
+                        file: file,
+                        name: file.name,
+                        size: file.size,
+                        type: file.type,
+                        status: 'uploaded',
+                        result: null
+                    });
+                });
+
+                this.updateFileList();
+                this.updateButtons();
+            }
+
+            updateFileList = () => {
+                if (this.files.length === 0) {
+                    this.fileList.classList.add('hidden');
+                    return;
+                }
+
+                this.fileList.classList.remove('hidden');
+                this.filesContainer.innerHTML = '';
+
+                this.files.forEach(fileData => {
+                    const fileItem = this.createFileItem(fileData);
+                    this.filesContainer.appendChild(fileItem);
+                });
+            }
+
+            createFileItem = (fileData) => {
+                const div = document.createElement('div');
+                div.className = 'file-item';
+                div.setAttribute('data-file-id', fileData.id);
+                div.innerHTML = `
+                    <div class="flex items-center space-x-3 flex-1">
+                        <i class="fas ${this.getFileIcon(fileData.type)} text-indigo-400"></i>
+                        <div class="flex-1">
+                            <div class="text-white font-medium">${fileData.name}</div>
+                            <div class="text-sm text-gray-400">${this.formatFileSize(fileData.size)}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="file-status file-status-${fileData.status}">
+                            ${this.getStatusText(fileData.status)}
+                        </span>
+                        <button class="text-red-400 hover:text-red-300" onclick="invoiceProcessor.removeFile('${fileData.id}')">
+                            <i class="fas fa-trash text-sm"></i>
+                        </button>
+                    </div>
+                `;
+                return div;
+            }
+
+            getFileIcon = (type) => {
+                if (type === 'application/pdf') return 'fa-file-pdf';
+                if (type.startsWith('image/')) return 'fa-file-image';
+                return 'fa-file';
+            }
+
+            formatFileSize = (bytes) => {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            getStatusText = (status) => {
+                const statusMap = {
+                    'uploaded': this.getTranslation('file-status-ready'),
+                    'processing': this.getTranslation('file-status-processing'),
+                    'completed': this.getTranslation('file-status-completed'),
+                    'error': this.getTranslation('file-status-error')
+                };
+                return statusMap[status] || status;
+            }
+
+            removeFile = (fileId) => {
+                this.files = this.files.filter(f => f.id !== parseFloat(fileId));
+                this.updateFileList();
+                this.updateButtons();
+            }
+
+            updateButtons = () => {
+                const hasFiles = this.files.length > 0;
+                this.processAllButton.disabled = !hasFiles || this.isProcessing;
+                this.clearAllButton.disabled = !hasFiles || this.isProcessing;
+
+                const hasResults = this.results.length > 0;
+                this.exportCSVButton.disabled = !hasResults;
+                this.exportExcelButton.disabled = !hasResults;
+                this.shareGoogleSheetsButton.disabled = !hasResults;
+            }
+
+            clearAllFiles = () => {
+                this.files = [];
+                this.updateFileList();
+                this.updateButtons();
+                this.fileInput.value = '';
+            }
+
+            // The main method to process all uploaded documents.
+            processAllDocuments = async () => {
+                if (this.files.length === 0 || this.isProcessing) return;
+
+                this.isProcessing = true;
+                this.results = [];
+                
+                this.uploadSection.classList.add('hidden');
+                this.processingSection.classList.remove('hidden');
+                this.resultsSection.classList.add('hidden');
+                this.clearResultsTable();
+
+                const initialFiles = [...this.files];
+                for (let i = 0; i < initialFiles.length; i++) {
+                    const fileData = initialFiles[i];
+                    
+                    try {
+                        // Update processing status with the current file name, using translation
+                        this.updateProcessingStatus(this.getTranslation('processing-file', { fileName: fileData.name }));
+                        this.updateOverallProgress(((i + 1) / initialFiles.length) * 100);
+                        
+                        this.updateFileStatusUI(fileData.id, 'processing');
+                        
+                        // Use the new API extraction method to get real data
+                        const result = await this.extractInvoiceData(fileData.file);
+                        
+                        fileData.result = result;
+                        fileData.status = 'completed';
+                        
+                        this.results.push({
+                            fileId: fileData.id,
+                            fileName: fileData.name,
+                            ...result
+                        });
+                        
+                        this.updateFileStatusUI(fileData.id, 'completed');
+                        
+                    } catch (error) {
+                        console.error(`Error processing ${fileData.name}:`, error);
+                        fileData.status = 'error';
+                        fileData.result = { error: error.message };
+                        this.updateFileStatusUI(fileData.id, 'error');
+                        this.results.push({
+                            fileId: fileData.id,
+                            fileName: fileData.name,
+                            vendorName: 'N/A',
+                            invoiceDate: 'N/A',
+                            totalAmount: 'N/A',
+                            error: error.message
+                        });
+                    }
+                }
+
+                this.updateProcessingStatus(this.getTranslation('processing-completed'));
+                this.updateOverallProgress(100);
+                
+                setTimeout(() => {
+                    this.showResults();
+                }, 1000);
+                
+                this.isProcessing = false;
+            }
+
+            // Helper function to dynamically get translated text with placeholders
+            getTranslation = (key, replacements = {}) => {
+                const lang = localStorage.getItem('kognix-lang') || 'en';
+                let text = translations[lang]?.[key] || translations['en'][key] || key;
+                for (const [placeholder, value] of Object.entries(replacements)) {
+                    text = text.replace(`{${placeholder}}`, value);
+                }
+                return text;
+            };
+
+            // Fixed method using arrow function to maintain `this` context
+            updateFileStatusUI = (fileId, status) => {
+                const fileItem = this.filesContainer.querySelector(`[data-file-id="${fileId}"]`);
+                if (fileItem) {
+                    const statusSpan = fileItem.querySelector('.file-status');
+                    if(statusSpan) {
+                      statusSpan.textContent = this.getStatusText(status);
+                      statusSpan.className = `file-status file-status-${status}`;
+                    }
+                }
+            }
+
+            // Fixed method using arrow function to maintain `this` context
+            updateProcessingStatus = (message) => {
+                if(this.processingStatus) {
+                  this.processingStatus.textContent = message;
+                }
+            }
+
+            updateOverallProgress = (percentage) => {
+                if(this.overallProgress) {
+                  this.overallProgress.style.width = `${percentage}%`;
+                }
+            }
+            
+            // This method is now updated to call the backend endpoint
+            async extractInvoiceData(file) {
+                // IMPORTANT: Replace this URL with your actual backend API endpoint
+                const apiUrl = '/api/extract-invoice';
+                
+                const fileContent = await this.fileToBase64(file);
+                
+                const payload = {
+                    imageData: fileContent,
+                    mimeType: file.type
+                };
+                
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`API Error: ${response.status} ${response.statusText}. Response: ${errorText}`);
+                    }
+
+                    return response.json();
+                } catch (error) {
+                    throw new Error(`Extraction failed: ${error.message}`);
+                }
+            }
+            
+            // New method to convert file to Base64, required for the API call
+            async fileToBase64(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => {
+                        // The result includes the mime type prefix, which we need to remove
+                        const base64 = reader.result.split(',')[1];
+                        resolve(base64);
+                    };
+                    reader.onerror = error => reject(error);
+                });
+            }
+            
+            showResults = () => {
+                this.processingSection.classList.add('hidden');
+                this.resultsSection.classList.remove('hidden');
+                
+                this.updateResultsStats();
+                this.populateResultsTable();
+                this.updateButtons();
+            }
+
+            updateResultsStats = () => {
+                const completedResults = this.results.filter(r => !r.error);
+                const totalDocs = completedResults.length;
+                const amounts = completedResults.map(r => parseFloat(r.totalAmount) || 0);
+                const totalAmount = amounts.reduce((sum, amt) => sum + amt, 0);
+                const avgAmount = totalDocs > 0 ? totalAmount / totalDocs : 0;
+                const vendors = new Set(completedResults.map(r => r.vendorName).filter(Boolean));
+                
+                if (this.totalProcessed) this.totalProcessed.textContent = totalDocs;
+                if (this.totalAmount) this.totalAmount.textContent = `$${totalAmount.toFixed(2)}`;
+                if (this.avgAmount) this.avgAmount.textContent = `$${avgAmount.toFixed(2)}`;
+                if (this.uniqueVendors) this.uniqueVendors.textContent = vendors.size;
+            }
+
+            populateResultsTable = () => {
+                if (!this.resultsTableBody) return;
+                this.resultsTableBody.innerHTML = '';
+                this.results.forEach(result => {
+                    const row = document.createElement('tr');
+                    row.className = 'border-b border-gray-700 hover:bg-gray-800 transition-colors';
+                    row.innerHTML = `
+                        <td class="px-4 py-3 text-sm text-white truncate">${result.fileName}</td>
+                        <td class="px-4 py-3 text-sm text-gray-300 truncate">${result.vendorName || 'N/A'}</td>
+                        <td class="px-4 py-3 text-sm text-gray-300">${result.invoiceDate || 'N/A'}</td>
+                        <td class="px-4 py-3 text-sm text-gray-300">$${result.totalAmount ? parseFloat(result.totalAmount).toFixed(2) : 'N/A'}</td>
+                        <td class="px-4 py-3 text-sm text-center">
+                            <span class="file-status file-status-${result.error ? 'error' : 'completed'}">${result.error ? 'Error' : 'Completed'}</span>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-center">
+                            <button class="text-indigo-400 hover:text-indigo-300 font-semibold" onclick="invoiceProcessor.showDetails('${result.fileId}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    `;
+                    this.resultsTableBody.appendChild(row);
+                });
+            }
+            
+            clearResultsTable = () => {
+                if (this.resultsTableBody) {
+                    this.resultsTableBody.innerHTML = '';
+                }
+            }
+
+            showDetails = (fileId) => {
+                const result = this.results.find(r => r.fileId === parseFloat(fileId));
+                if (!result) return;
+                
+                const fileData = this.files.find(f => f.id === parseFloat(fileId));
+                if (!fileData) return;
+
+                // Display the original document
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    if (this.modalDocumentImage) {
+                        this.modalDocumentImage.src = e.target.result;
+                    }
+                };
+                reader.readAsDataURL(fileData.file);
+
+                // Populate extracted data
+                if (this.modalExtractedData) {
+                    this.modalExtractedData.innerHTML = `
+                        ${result.error ? `
+                            <p class="text-red-400">Error: ${result.error}</p>
+                        ` : `
+                            <p class="text-gray-400"><span class="font-bold text-white">Invoice Number:</span> ${result.invoiceNumber || 'N/A'}</p>
+                            <p class="text-gray-400"><span class="font-bold text-white">Vendor Name:</span> ${result.vendorName || 'N/A'}</p>
+                            <p class="text-gray-400"><span class="font-bold text-white">Invoice Date:</span> ${result.invoiceDate || 'N/A'}</p>
+                            <p class="text-gray-400"><span class="font-bold text-white">Due Date:</span> ${result.dueDate || 'N/A'}</p>
+                            <p class="text-gray-400"><span class="font-bold text-white">Total Amount:</span> $${result.totalAmount ? parseFloat(result.totalAmount).toFixed(2) : 'N/A'}</p>
+                            <hr class="border-gray-700 my-4">
+                            <h4 class="text-lg font-bold text-white">Line Items</h4>
+                            ${result.lineItems && result.lineItems.length > 0
+                                ? result.lineItems.map(item => `
+                                    <div class="space-y-1 text-sm bg-gray-800 p-3 rounded-md">
+                                        <p class="text-gray-300"><span class="font-semibold text-white">Product:</span> ${item.product || 'N/A'}</p>
+                                        <p class="text-gray-300"><span class="font-semibold text-white">Quantity:</span> ${item.quantity || 'N/A'}</p>
+                                        <p class="text-gray-300"><span class="font-semibold text-white">Unit Price:</span> $${item.unitPrice ? parseFloat(item.unitPrice).toFixed(2) : 'N/A'}</p>
+                                        <p class="text-gray-300"><span class="font-semibold text-white">Total Price:</span> $${item.totalPrice ? parseFloat(item.totalPrice).toFixed(2) : 'N/A'}</p>
+                                    </div>
+                                `).join('')
+                                : '<p class="text-gray-500">No line items found.</p>'
+                            }
+                        `}
+                    `;
+                }
+
+                this.showModal();
+            }
+
+            showModal = () => {
+                if (this.detailModal) {
+                    this.detailModal.classList.remove('hidden');
+                }
+            }
+
+            hideModal = () => {
+                if (this.detailModal) {
+                    this.detailModal.classList.add('hidden');
+                }
+            }
+
+            resetToUpload = () => {
+                this.resultsSection.classList.add('hidden');
+                this.processingSection.classList.add('hidden');
+                this.uploadSection.classList.remove('hidden');
+                this.files = [];
+                this.results = [];
+                if (this.fileInput) this.fileInput.value = '';
+                if (this.filesContainer) this.filesContainer.innerHTML = '';
+                if (this.fileList) this.fileList.classList.add('hidden');
+                this.updateButtons();
+            }
+
+            clearResults = () => {
+                this.resetToUpload();
+            }
+
+            exportToCSV = (fileName = 'invoice_data.csv') => {
+                if (this.results.length === 0) {
+                    this.showNotification("No results to export.", "error");
+                    return;
+                }
+                const headers = ["fileName", "invoiceNumber", "vendorName", "invoiceDate", "dueDate", "totalAmount", "currency", "taxAmount", "subtotal", "product", "quantity", "unitPrice", "totalPrice"];
+                const csvRows = [headers.map(header => `"${header}"`).join(',')];
+
+                this.results.forEach(result => {
+                    const commonFields = [
+                        `"${result.fileName}"`,
+                        `"${result.invoiceNumber || ''}"`,
+                        `"${result.vendorName || ''}"`,
+                        `"${result.invoiceDate || ''}"`,
+                        `"${result.dueDate || ''}"`,
+                        `"${result.totalAmount || ''}"`,
+                        `"${result.currency || ''}"`,
+                        `"${result.taxAmount || ''}"`,
+                        `"${result.subtotal || ''}"`
+                    ];
+                    if (result.lineItems && result.lineItems.length > 0) {
+                        result.lineItems.forEach(item => {
+                            const lineItemFields = [
+                                `"${item.product || ''}"`,
+                                `"${item.quantity || ''}"`,
+                                `"${item.unitPrice || ''}"`,
+                                `"${item.totalPrice || ''}"`
+                            ];
+                            csvRows.push([...commonFields, ...lineItemFields].join(','));
+                        });
+                    } else {
+                        csvRows.push([...commonFields, '', '', '', ''].join(','));
                     }
                 });
 
-                if (response.ok) {
-                    formStatus.textContent = translations[document.getElementById('current-lang-text').textContent.toLowerCase()]["form-success-message"];
-                    formStatus.classList.remove('hidden');
-                    formStatus.classList.remove('text-red-400');
-                    formStatus.classList.add('text-green-400');
-                    form.reset(); // Clear the form
-                } else {
-                    const errorData = await response.json();
-                    const errorMessage = errorData.errors ? errorData.errors.map(e => e.message).join(', ') : 'Unknown error.';
-                    formStatus.textContent = `Error: ${errorMessage}`;
-                    formStatus.classList.remove('hidden');
-                    formStatus.classList.remove('text-green-400');
-                    formStatus.classList.add('text-red-400');
-                    console.error('Form submission failed:', response.status, response.statusText, errorData);
-                }
-            } catch (error) {
-                formStatus.textContent = "An error occurred. Please check your internet connection."; // Network error
-                formStatus.classList.remove('hidden');
-                formStatus.classList.remove('text-green-400');
-                formStatus.classList.add('text-red-400');
-                console.error('Form submission error:', error);
-            } finally {
-                submitButton.disabled = false;
-                // Re-apply button text based on current language after submission
-                const currentLang = document.getElementById('current-lang-text').textContent.toLowerCase();
-                submitButton.textContent = translations[currentLang]["form-submit-button"];
+                const csvString = csvRows.join('\n');
+                const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', fileName);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             }
-        });
+
+            exportToExcel = () => {
+                if (this.results.length === 0) {
+                    this.showNotification("No results to export.", "error");
+                    return;
+                }
+                
+                const data = this.results.flatMap(result => {
+                    const commonFields = {
+                        'File Name': result.fileName,
+                        'Invoice #': result.invoiceNumber,
+                        'Vendor': result.vendorName,
+                        'Date': result.invoiceDate,
+                        'Due Date': result.dueDate,
+                        'Total Amount': result.totalAmount,
+                        'Currency': result.currency,
+                        'Tax Amount': result.taxAmount,
+                        'Subtotal': result.subtotal
+                    };
+                    
+                    if (result.lineItems && result.lineItems.length > 0) {
+                        return result.lineItems.map(item => ({
+                            ...commonFields,
+                            'Product': item.product,
+                            'Quantity': item.quantity,
+                            'Unit Price': item.unitPrice,
+                            'Total Price': item.totalPrice
+                        }));
+                    } else {
+                        return [{
+                            ...commonFields,
+                            'Product': '',
+                            'Quantity': '',
+                            'Unit Price': '',
+                            'Total Price': ''
+                        }];
+                    }
+                });
+                
+                const worksheet = XLSX.utils.json_to_sheet(data);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Invoice Data");
+                XLSX.writeFile(workbook, "invoice_data.xlsx");
+            }
+            
+            showNotification = (message, type = 'info') => {
+                const notification = document.createElement('div');
+                notification.textContent = message;
+                notification.className = `fixed bottom-5 left-1/2 -translate-x-1/2 p-4 rounded-lg shadow-xl text-white z-[60] transition-all duration-300`;
+
+                if (type === 'error') {
+                    notification.classList.add('bg-red-500');
+                } else if (type === 'success') {
+                    notification.classList.add('bg-green-500');
+                } else {
+                    notification.classList.add('bg-gray-800');
+                }
+
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            }
+
+            shareToGoogleSheets = () => {
+                this.showNotification(this.getTranslation('share-gsheets-message'), "info");
+            }
+        }
+        
+        // New translations for notifications
+        translations.en['invalid-files-message'] = "Please select valid image or PDF files.";
+        translations.fr['invalid-files-message'] = "Veuillez sélectionner des fichiers image ou PDF valides.";
+        translations.es['invalid-files-message'] = "Por favor, seleccione archivos de imagen o PDF válidos.";
+        
+        translations.en['file-status-ready'] = "Ready";
+        translations.fr['file-status-ready'] = "Prêt";
+        translations.es['file-status-ready'] = "Listo";
+        
+        translations.en['file-status-processing'] = "Processing...";
+        translations.fr['file-status-processing'] = "Traitement...";
+        translations.es['file-status-processing'] = "Procesando...";
+        
+        translations.en['file-status-completed'] = "Completed";
+        translations.fr['file-status-completed'] = "Terminé";
+        translations.es['file-status-completed'] = "Completado";
+        
+        translations.en['file-status-error'] = "Error";
+        translations.fr['file-status-error'] = "Erreur";
+        translations.es['file-status-error'] = "Error";
+        
+        translations.en['share-gsheets-message'] = "Sharing to Google Sheets is a premium feature. Please contact sales.";
+        translations.fr['share-gsheets-message'] = "Le partage vers Google Sheets est une fonctionnalité premium. Veuillez contacter les ventes.";
+        translations.es['share-gsheets-message'] = "Compartir en Hojas de cálculo de Google es una función premium. Por favor, contacte con ventas.";
     </script>
 </body>
 </html>

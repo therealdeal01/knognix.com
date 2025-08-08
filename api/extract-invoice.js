@@ -72,51 +72,72 @@ Important rules:
       }
     };
     
-    // Generate content from the model with a structured schema
-    const result = await model.generateContent({
-        contents: [{
-            parts: [
-                { text: prompt },
-                imagePart
-            ]
-        }],
-        generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: "OBJECT",
-                properties: {
-                    "invoiceNumber": { "type": "STRING", "nullable": true },
-                    "vendorName": { "type": "STRING", "nullable": true },
-                    "invoiceDate": { "type": "STRING", "nullable": true },
-                    "dueDate": { "type": "STRING", "nullable": true },
-                    "totalAmount": { "type": "NUMBER", "nullable": true },
-                    "currency": { "type": "STRING", "nullable": true },
-                    "lineItems": {
-                        "type": "ARRAY",
-                        "items": {
-                            "type": "OBJECT",
-                            "properties": {
-                                "product": { "type": "STRING", "nullable": true },
-                                "quantity": { "type": "NUMBER", "nullable": true },
-                                "unitPrice": { "type": "NUMBER", "nullable": true },
-                                "totalPrice": { "type": "NUMBER", "nullable": true }
+    // --- EDITED SECTION: Add retry logic with exponential backoff ---
+    let result;
+    const maxRetries = 3;
+    let retries = 0;
+    
+    while (retries < maxRetries) {
+      try {
+        result = await model.generateContent({
+            contents: [{
+                parts: [
+                    { text: prompt },
+                    imagePart
+                ]
+            }],
+            generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: "OBJECT",
+                    properties: {
+                        "invoiceNumber": { "type": "STRING", "nullable": true },
+                        "vendorName": { "type": "STRING", "nullable": true },
+                        "invoiceDate": { "type": "STRING", "nullable": true },
+                        "dueDate": { "type": "STRING", "nullable": true },
+                        "totalAmount": { "type": "NUMBER", "nullable": true },
+                        "currency": { "type": "STRING", "nullable": true },
+                        "lineItems": {
+                            "type": "ARRAY",
+                            "items": {
+                                "type": "OBJECT",
+                                "properties": {
+                                    "product": { "type": "STRING", "nullable": true },
+                                    "quantity": { "type": "NUMBER", "nullable": true },
+                                    "unitPrice": { "type": "NUMBER", "nullable": true },
+                                    "totalPrice": { "type": "NUMBER", "nullable": true }
+                                }
                             }
                         }
                     }
                 }
             }
+        });
+        
+        // If successful, break the loop
+        if (result?.candidates?.[0]?.content?.parts?.[0]?.text) {
+          break;
         }
-    });
+      } catch (error) {
+        console.error(`AI call failed (Retry ${retries + 1}/${maxRetries}):`, error.message);
+      }
+      
+      retries++;
+      if (retries < maxRetries) {
+        const delay = Math.pow(2, retries) * 1000; // Exponential backoff (1s, 2s, 4s)
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+    // --- END EDITED SECTION ---
 
-    // Add a more robust safety check to prevent a crash if the API response is malformed.
-    // We now check for `result.candidates` and `result.candidates[0].content` before accessing properties.
+    // Now, perform a final check after retries
     const extractedDataPart = result?.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!extractedDataPart) {
-      console.error('Unexpected API response structure:', JSON.stringify(result, null, 2));
+      console.error('Final attempt failed. Unexpected AI response structure:', JSON.stringify(result, null, 2));
       return response.status(500).json({
         error: 'Failed to process AI response.',
-        details: 'The AI model returned an unexpected or empty response.'
+        details: 'The AI model returned an unexpected or empty response after multiple retries.'
       });
     }
 

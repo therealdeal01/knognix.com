@@ -1,7 +1,11 @@
-// This file MUST be placed in the `api` directory of your project
-// to correctly handle POST requests at the `/api/extract-invoice` endpoint.
-
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { PDFDocument } = require('pdf-lib');
+const sharp = require('sharp');
+
+// --- Helper function for exponential backoff ---
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 module.exports = async (request, response) => {
   // Set CORS headers to allow requests from the frontend
@@ -27,12 +31,12 @@ module.exports = async (request, response) => {
       return response.status(500).json({ error: 'API key is not configured on the server.' });
     }
 
-    // Get the data from the request body
-    const { imageData, mimeType } = request.body;
+    // Get the array of files from the request body
+    const { files } = request.body;
     
     // Validate the request body
-    if (!imageData || !mimeType) {
-      return response.status(400).json({ error: 'Missing imageData or mimeType in request body.' });
+    if (!files || !Array.isArray(files) || files.length === 0) {
+      return response.status(400).json({ error: 'Missing or invalid file array in request body.' });
     }
 
     // Initialize the Generative AI model
@@ -63,94 +67,136 @@ Important rules:
 1. Return ONLY valid JSON, with no additional text or markdown formatting.
 2. If a field is not found, use null for strings and numbers.
 3. Parse all monetary values as numbers.
-4. Ensure dates are in YYYY-MM-DD format.`;
+4. Ensure dates are in YYYY-MM-DD format.
+5. Extract only the invoice details, nothing else.`;
+    
+    const extractedInvoices = [];
 
-    const imagePart = {
-      inlineData: {
-        data: imageData,
-        mimeType: mimeType
-      }
-    };
-    
-    // --- EDITED SECTION: Add retry logic with exponential backoff ---
-    let result;
-    const maxRetries = 3;
-    let retries = 0;
-    
-    while (retries < maxRetries) {
+    // Process all files in parallel
+    await Promise.all(files.map(async ({ imageData, mimeType }) => {
+      let imagePart;
+      
       try {
-        result = await model.generateContent({
-            contents: [{
-                parts: [
-                    { text: prompt },
-                    imagePart
-                ]
-            }],
-            generationConfig: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: "OBJECT",
-                    properties: {
-                        "invoiceNumber": { "type": "STRING", "nullable": true },
-                        "vendorName": { "type": "STRING", "nullable": true },
-                        "invoiceDate": { "type": "STRING", "nullable": true },
-                        "dueDate": { "type": "STRING", "nullable": true },
-                        "totalAmount": { "type": "NUMBER", "nullable": true },
-                        "currency": { "type": "STRING", "nullable": true },
-                        "lineItems": {
-                            "type": "ARRAY",
-                            "items": {
-                                "type": "OBJECT",
-                                "properties": {
-                                    "product": { "type": "STRING", "nullable": true },
-                                    "quantity": { "type": "NUMBER", "nullable": true },
-                                    "unitPrice": { "type": "NUMBER", "nullable": true },
-                                    "totalPrice": { "type": "NUMBER", "nullable": true }
-                                }
-                            }
-                        }
-                    }
-                }
+        if (mimeType.startsWith('image/')) {
+          // Process JPG/PNG files directly
+          imagePart = {
+            inlineData: {
+              data: imageData,
+              mimeType: mimeType
             }
-        });
-        
-        // If successful, break the loop
-        if (result?.candidates?.[0]?.content?.parts?.[0]?.text) {
-          break;
+          };
+        } else if (mimeType === 'application/pdf') {
+          // Convert the first page of the PDF to a PNG image
+          const pdfBytes = Buffer.from(imageData, 'base64');
+          const pdfDoc = await PDFDocument.load(pdfBytes);
+          
+          if (pdfDoc.getPageCount() === 0) {
+              throw new Error('PDF document has no pages.');
+          }
+          
+          // Note: pdf-lib itself doesn't render to an image. The sharp library
+          // cannot directly process a single-page PDF buffer created by pdf-lib.
+          // This part of the code would need a more complex solution involving
+          // a PDF rendering library like 'node-canvas' or a different approach
+          // to be fully functional. For this reason, this PDF conversion logic
+          // is a simplified placeholder.
+          // The AI model can often process PDFs directly, so we'll pass the PDF data.
+          imagePart = {
+            inlineData: {
+              data: imageData,
+              mimeType: mimeType
+            }
+          };
+          
+          // Fallback to simpler PDF conversion if direct processing fails.
+          // The previous code using 'sharp' with pdf-lib is an invalid approach.
+          // The best solution is to pass the base64 PDF data directly to Gemini,
+          // which the new code handles by skipping the sharp conversion.
+        } else {
+          throw new Error(`Unsupported file type: ${mimeType}`);
         }
       } catch (error) {
-        console.error(`AI call failed (Retry ${retries + 1}/${maxRetries}):`, error.message);
+        console.error('File conversion error:', error);
+        // Push a structured error to the results array
+        extractedInvoices.push({ error: `File conversion failed: ${error.message}` });
+        return; // Skip this file and move to the next one
+      }
+
+      // --- Call the AI with retry logic ---
+      let result;
+      const maxRetries = 3;
+      let retries = 0;
+      
+      while (retries < maxRetries) {
+        try {
+          result = await model.generateContent({
+              contents: [{
+                  parts: [
+                      { text: prompt },
+                      imagePart
+                  ]
+              }],
+              generationConfig: {
+                  responseMimeType: "application/json",
+                  responseSchema: {
+                      type: "OBJECT",
+                      properties: {
+                          "invoiceNumber": { "type": "STRING", "nullable": true },
+                          "vendorName": { "type": "STRING", "nullable": true },
+                          "invoiceDate": { "type": "STRING", "nullable": true },
+                          "dueDate": { "type": "STRING", "nullable": true },
+                          "totalAmount": { "type": "NUMBER", "nullable": true },
+                          "currency": { "type": "STRING", "nullable": true },
+                          "lineItems": {
+                              "type": "ARRAY",
+                              "items": {
+                                  "type": "OBJECT",
+                                  "properties": {
+                                      "product": { "type": "STRING", "nullable": true },
+                                      "quantity": { "type": "NUMBER", "nullable": true },
+                                      "unitPrice": { "type": "NUMBER", "nullable": true },
+                                      "totalPrice": { "type": "NUMBER", "nullable": true }
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+          });
+          
+          if (result?.candidates?.[0]?.content?.parts?.[0]?.text) {
+            break;
+          }
+        } catch (error) {
+          console.error(`AI call failed (Retry ${retries + 1}/${maxRetries}):`, error.message);
+        }
+        
+        retries++;
+        if (retries < maxRetries) {
+          const delay = Math.pow(2, retries) * 1000;
+          await sleep(delay);
+        }
+      }
+
+      // Final check after retries
+      const extractedDataPart = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      if (!extractedDataPart) {
+        console.error('Final AI attempt failed.');
+        extractedInvoices.push({ error: 'AI extraction failed after multiple retries.' });
+        return;
       }
       
-      retries++;
-      if (retries < maxRetries) {
-        const delay = Math.pow(2, retries) * 1000; // Exponential backoff (1s, 2s, 4s)
-        await new Promise(resolve => setTimeout(resolve, delay));
+      try {
+        const extractedData = JSON.parse(extractedDataPart);
+        extractedInvoices.push(extractedData);
+      } catch (parseError) {
+        console.error('JSON parsing error after AI response:', parseError);
+        extractedInvoices.push({ error: 'AI returned a response that could not be parsed.' });
       }
-    }
-    // --- END EDITED SECTION ---
+    }));
 
-    // Now, perform a final check after retries
-    const extractedDataPart = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!extractedDataPart) {
-      console.error('Final attempt failed. Unexpected AI response structure:', JSON.stringify(result, null, 2));
-      return response.status(500).json({
-        error: 'Failed to process AI response.',
-        details: 'The AI model returned an unexpected or empty response after multiple retries.'
-      });
-    }
-
-    try {
-      const extractedData = JSON.parse(extractedDataPart);
-      return response.status(200).json(extractedData);
-    } catch (parseError) {
-      console.error('JSON parsing error after AI response:', parseError);
-      return response.status(500).json({
-        error: 'Failed to parse AI response.',
-        details: 'The AI returned a response that could not be parsed as valid JSON.'
-      });
-    }
+    return response.status(200).json({ invoices: extractedInvoices });
 
   } catch (error) {
     console.error('Error in serverless function:', error);

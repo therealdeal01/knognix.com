@@ -744,8 +744,6 @@
                 "service-analytics-text": "Utilisez l'apprentissage automatique pour l'analyse prédictive et l'aide à la décision, comme la prédiction de l'attrition et la détection d'anomalies.",
                 "service-saas-title": "Intégration d'IA pour les plateformes SaaS",
                 "service-saas-text": "Intégrez des fonctionnalités d'IA comme la recherche intelligente, la conversion de la voix en texte et la synthèse de contenu dans vos outils SaaS existants.",
-                "service-workflows-title": "Outils d'automatisation des flux de travail",
-                "service-workflows-text": "Créez ou intégrez des outils sans code/à faible code pour un déploiement rapide, et proposez des plugins IA personnalisés.",
                 "service-support-title": "Solutions de support client IA",
                 "service-support-text": "Déployez des agents IA multilingues et des systèmes hybrides humain/IA, y compris des robots vocaux optionnels avec des LLM.",
                 "service-compliance-title": "Conseil en conformité et éthique IA",
@@ -1079,7 +1077,7 @@
                 
                 // Action button listeners
                 this.processMoreButton.addEventListener('click', () => this.resetToUpload());
-                this.clearResultsButton.addEventListener('click', () => this.resetToUpload());
+                this.clearResultsButton.addEventListener('click', () => this.clearResults());
                 
                 // Modal listeners
                 this.closeModal.addEventListener('click', () => this.hideModal());
@@ -1123,7 +1121,7 @@
                 });
 
                 if (validFiles.length === 0) {
-                    this.showNotification('Please select valid image or PDF files.', 'error');
+                    this.showNotification(this.getTranslation('invalid-files-message'), 'error');
                     return;
                 }
 
@@ -1200,10 +1198,10 @@
 
             getStatusText = (status) => {
                 const statusMap = {
-                    'uploaded': 'Ready',
-                    'processing': 'Processing...',
-                    'completed': 'Completed',
-                    'error': 'Error'
+                    'uploaded': this.getTranslation('file-status-ready'),
+                    'processing': this.getTranslation('file-status-processing'),
+                    'completed': this.getTranslation('file-status-completed'),
+                    'error': this.getTranslation('file-status-error')
                 };
                 return statusMap[status] || status;
             }
@@ -1274,6 +1272,14 @@
                         fileData.status = 'error';
                         fileData.result = { error: error.message };
                         this.updateFileStatusUI(fileData.id, 'error');
+                        this.results.push({
+                            fileId: fileData.id,
+                            fileName: fileData.name,
+                            vendorName: 'N/A',
+                            invoiceDate: 'N/A',
+                            totalAmount: 'N/A',
+                            error: error.message
+                        });
                     }
                 }
 
@@ -1322,105 +1328,34 @@
                 }
             }
             
+            // This method is now updated to call the backend endpoint
             async extractInvoiceData(file) {
-                let retries = 0;
-                const maxRetries = 3;
-                const baseDelay = 1000; // 1 second
+                // IMPORTANT: Replace this URL with your actual backend API endpoint
+                const apiUrl = '/api/extract-invoice';
                 
-                while (retries < maxRetries) {
-                    try {
-                        const fileContent = await this.fileToBase64(file);
-                        const prompt = `Extract the following fields from the provided document. If a field is not present, use "N/A". Respond with a JSON object.
-                        
-                        Fields to extract:
-                        - invoiceNumber: The unique identifier for the invoice.
-                        - vendorName: The name of the company or person who issued the invoice.
-                        - invoiceDate: The date the invoice was issued. Format as YYYY-MM-DD.
-                        - dueDate: The date the payment is due. Format as YYYY-MM-DD.
-                        - totalAmount: The total amount due, including taxes. Format as a floating-point number.
-                        - currency: The currency of the total amount (e.g., USD, EUR).
-                        - lineItems: An array of objects, where each object represents a line item. Each line item object should have 'product' (string), 'quantity' (number), 'unitPrice' (number), and 'totalPrice' (number). If no line items are present, use an empty array.
-                        
-                        Document content:
-                        `
-                        
-                        const payload = {
-                            contents: [{
-                                role: "user",
-                                parts: [
-                                    { text: prompt },
-                                    {
-                                        inlineData: {
-                                            mimeType: file.type,
-                                            data: fileContent
-                                        }
-                                    }
-                                ]
-                            }],
-                            generationConfig: {
-                                responseMimeType: "application/json",
-                                responseSchema: {
-                                    type: "OBJECT",
-                                    properties: {
-                                        invoiceNumber: { type: "STRING" },
-                                        vendorName: { type: "STRING" },
-                                        invoiceDate: { type: "STRING" },
-                                        dueDate: { type: "STRING" },
-                                        totalAmount: { type: "NUMBER" },
-                                        currency: { type: "STRING" },
-                                        lineItems: {
-                                            type: "ARRAY",
-                                            items: {
-                                                type: "OBJECT",
-                                                properties: {
-                                                    product: { type: "STRING" },
-                                                    quantity: { type: "NUMBER" },
-                                                    unitPrice: { type: "NUMBER" },
-                                                    totalPrice: { type: "NUMBER" }
-                                                }
-                                            }
-                                        }
-                                    },
-                                    propertyOrdering: ["invoiceNumber", "vendorName", "invoiceDate", "dueDate", "totalAmount", "currency", "lineItems"]
-                                }
-                            }
-                        };
-                        
-                        // FIX: The apiKey should be an empty string for the canvas environment to inject it
-                        const apiKey = ""; 
-                        
-                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-                        const response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
+                const fileContent = await this.fileToBase64(file);
+                
+                const payload = {
+                    imageData: fileContent,
+                    mimeType: file.type
+                };
+                
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
 
-                        if (!response.ok) {
-                            if (response.status === 429) {
-                                // Too many requests - exponential backoff
-                                const delay = baseDelay * (2 ** retries);
-                                console.warn(`API rate limit exceeded. Retrying in ${delay}ms...`);
-                                await new Promise(resolve => setTimeout(resolve, delay));
-                                retries++;
-                                continue;
-                            } else {
-                                const errorText = await response.text();
-                                throw new Error(`Serverless function error: ${response.status} ${response.statusText}. Response was: ${errorText.substring(0, 50)}...`);
-                            }
-                        }
-
-                        const result = await response.json();
-                        const extractedData = JSON.parse(result.candidates[0].content.parts[0].text);
-                        return extractedData;
-
-                    } catch (error) {
-                        console.error(`Extraction failed: ${error.message}`);
-                        throw new Error(`Extraction failed: ${error.message}`);
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`API Error: ${response.status} ${response.statusText}. Response: ${errorText}`);
                     }
+
+                    return response.json();
+                } catch (error) {
+                    throw new Error(`Extraction failed: ${error.message}`);
                 }
-                
-                throw new Error("API call failed after multiple retries.");
             }
             
             // New method to convert file to Base64, required for the API call
@@ -1429,6 +1364,7 @@
                     const reader = new FileReader();
                     reader.readAsDataURL(file);
                     reader.onload = () => {
+                        // The result includes the mime type prefix, which we need to remove
                         const base64 = reader.result.split(',')[1];
                         resolve(base64);
                     };
@@ -1448,7 +1384,7 @@
             updateResultsStats = () => {
                 const completedResults = this.results.filter(r => !r.error);
                 const totalDocs = completedResults.length;
-                const amounts = completedResults.map(r => r.totalAmount || 0);
+                const amounts = completedResults.map(r => parseFloat(r.totalAmount) || 0);
                 const totalAmount = amounts.reduce((sum, amt) => sum + amt, 0);
                 const avgAmount = totalDocs > 0 ? totalAmount / totalDocs : 0;
                 const vendors = new Set(completedResults.map(r => r.vendorName).filter(Boolean));
@@ -1469,7 +1405,7 @@
                         <td class="px-4 py-3 text-sm text-white truncate">${result.fileName}</td>
                         <td class="px-4 py-3 text-sm text-gray-300 truncate">${result.vendorName || 'N/A'}</td>
                         <td class="px-4 py-3 text-sm text-gray-300">${result.invoiceDate || 'N/A'}</td>
-                        <td class="px-4 py-3 text-sm text-gray-300">$${result.totalAmount ? result.totalAmount.toFixed(2) : 'N/A'}</td>
+                        <td class="px-4 py-3 text-sm text-gray-300">$${result.totalAmount ? parseFloat(result.totalAmount).toFixed(2) : 'N/A'}</td>
                         <td class="px-4 py-3 text-sm text-center">
                             <span class="file-status file-status-${result.error ? 'error' : 'completed'}">${result.error ? 'Error' : 'Completed'}</span>
                         </td>
@@ -1497,7 +1433,6 @@
                 if (!fileData) return;
 
                 // Display the original document
-                // NOTE: PDF preview in img tag is not reliable. A full PDF viewer library would be needed.
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     if (this.modalDocumentImage) {
@@ -1516,7 +1451,7 @@
                             <p class="text-gray-400"><span class="font-bold text-white">Vendor Name:</span> ${result.vendorName || 'N/A'}</p>
                             <p class="text-gray-400"><span class="font-bold text-white">Invoice Date:</span> ${result.invoiceDate || 'N/A'}</p>
                             <p class="text-gray-400"><span class="font-bold text-white">Due Date:</span> ${result.dueDate || 'N/A'}</p>
-                            <p class="text-gray-400"><span class="font-bold text-white">Total Amount:</span> $${result.totalAmount ? result.totalAmount.toFixed(2) : 'N/A'}</p>
+                            <p class="text-gray-400"><span class="font-bold text-white">Total Amount:</span> $${result.totalAmount ? parseFloat(result.totalAmount).toFixed(2) : 'N/A'}</p>
                             <hr class="border-gray-700 my-4">
                             <h4 class="text-lg font-bold text-white">Line Items</h4>
                             ${result.lineItems && result.lineItems.length > 0
@@ -1524,8 +1459,8 @@
                                     <div class="space-y-1 text-sm bg-gray-800 p-3 rounded-md">
                                         <p class="text-gray-300"><span class="font-semibold text-white">Product:</span> ${item.product || 'N/A'}</p>
                                         <p class="text-gray-300"><span class="font-semibold text-white">Quantity:</span> ${item.quantity || 'N/A'}</p>
-                                        <p class="text-gray-300"><span class="font-semibold text-white">Unit Price:</span> $${item.unitPrice ? item.unitPrice.toFixed(2) : 'N/A'}</p>
-                                        <p class="text-gray-300"><span class="font-semibold text-white">Total Price:</span> $${item.totalPrice ? item.totalPrice.toFixed(2) : 'N/A'}</p>
+                                        <p class="text-gray-300"><span class="font-semibold text-white">Unit Price:</span> $${item.unitPrice ? parseFloat(item.unitPrice).toFixed(2) : 'N/A'}</p>
+                                        <p class="text-gray-300"><span class="font-semibold text-white">Total Price:</span> $${item.totalPrice ? parseFloat(item.totalPrice).toFixed(2) : 'N/A'}</p>
                                     </div>
                                 `).join('')
                                 : '<p class="text-gray-500">No line items found.</p>'
@@ -1571,42 +1506,32 @@
                     return;
                 }
                 const headers = ["fileName", "invoiceNumber", "vendorName", "invoiceDate", "dueDate", "totalAmount", "currency", "taxAmount", "subtotal", "product", "quantity", "unitPrice", "totalPrice"];
-                const csvRows = [headers.join(',')];
+                const csvRows = [headers.map(header => `"${header}"`).join(',')];
 
                 this.results.forEach(result => {
+                    const commonFields = [
+                        `"${result.fileName}"`,
+                        `"${result.invoiceNumber || ''}"`,
+                        `"${result.vendorName || ''}"`,
+                        `"${result.invoiceDate || ''}"`,
+                        `"${result.dueDate || ''}"`,
+                        `"${result.totalAmount || ''}"`,
+                        `"${result.currency || ''}"`,
+                        `"${result.taxAmount || ''}"`,
+                        `"${result.subtotal || ''}"`
+                    ];
                     if (result.lineItems && result.lineItems.length > 0) {
                         result.lineItems.forEach(item => {
-                            const row = [
-                                `"${result.fileName}"`,
-                                `"${result.invoiceNumber || ''}"`,
-                                `"${result.vendorName || ''}"`,
-                                `"${result.invoiceDate || ''}"`,
-                                `"${result.dueDate || ''}"`,
-                                `"${result.totalAmount || ''}"`,
-                                `"${result.currency || ''}"`,
-                                `"${result.taxAmount || ''}"`,
-                                `"${result.subtotal || ''}"`,
+                            const lineItemFields = [
                                 `"${item.product || ''}"`,
                                 `"${item.quantity || ''}"`,
                                 `"${item.unitPrice || ''}"`,
                                 `"${item.totalPrice || ''}"`
                             ];
-                            csvRows.push(row.join(','));
+                            csvRows.push([...commonFields, ...lineItemFields].join(','));
                         });
                     } else {
-                        const row = [
-                            `"${result.fileName}"`,
-                            `"${result.invoiceNumber || ''}"`,
-                            `"${result.vendorName || ''}"`,
-                            `"${result.invoiceDate || ''}"`,
-                            `"${result.dueDate || ''}"`,
-                            `"${result.totalAmount || ''}"`,
-                            `"${result.currency || ''}"`,
-                            `"${result.taxAmount || ''}"`,
-                            `"${result.subtotal || ''}"`,
-                            '', '', '', ''
-                        ];
-                        csvRows.push(row.join(','));
+                        csvRows.push([...commonFields, '', '', '', ''].join(','));
                     }
                 });
 
@@ -1629,17 +1554,21 @@
                 }
                 
                 const data = this.results.flatMap(result => {
+                    const commonFields = {
+                        'File Name': result.fileName,
+                        'Invoice #': result.invoiceNumber,
+                        'Vendor': result.vendorName,
+                        'Date': result.invoiceDate,
+                        'Due Date': result.dueDate,
+                        'Total Amount': result.totalAmount,
+                        'Currency': result.currency,
+                        'Tax Amount': result.taxAmount,
+                        'Subtotal': result.subtotal
+                    };
+                    
                     if (result.lineItems && result.lineItems.length > 0) {
                         return result.lineItems.map(item => ({
-                            'File Name': result.fileName,
-                            'Invoice #': result.invoiceNumber,
-                            'Vendor': result.vendorName,
-                            'Date': result.invoiceDate,
-                            'Due Date': result.dueDate,
-                            'Total Amount': result.totalAmount,
-                            'Currency': result.currency,
-                            'Tax Amount': result.taxAmount,
-                            'Subtotal': result.subtotal,
+                            ...commonFields,
                             'Product': item.product,
                             'Quantity': item.quantity,
                             'Unit Price': item.unitPrice,
@@ -1647,15 +1576,7 @@
                         }));
                     } else {
                         return [{
-                            'File Name': result.fileName,
-                            'Invoice #': result.invoiceNumber,
-                            'Vendor': result.vendorName,
-                            'Date': result.invoiceDate,
-                            'Due Date': result.dueDate,
-                            'Total Amount': result.totalAmount,
-                            'Currency': result.currency,
-                            'Tax Amount': result.taxAmount,
-                            'Subtotal': result.subtotal,
+                            ...commonFields,
                             'Product': '',
                             'Quantity': '',
                             'Unit Price': '',
@@ -1691,9 +1612,34 @@
             }
 
             shareToGoogleSheets = () => {
-                this.showNotification("Sharing to Google Sheets is a premium feature. Please contact sales.", "info");
+                this.showNotification(this.getTranslation('share-gsheets-message'), "info");
             }
         }
+        
+        // New translations for notifications
+        translations.en['invalid-files-message'] = "Please select valid image or PDF files.";
+        translations.fr['invalid-files-message'] = "Veuillez sélectionner des fichiers image ou PDF valides.";
+        translations.es['invalid-files-message'] = "Por favor, seleccione archivos de imagen o PDF válidos.";
+        
+        translations.en['file-status-ready'] = "Ready";
+        translations.fr['file-status-ready'] = "Prêt";
+        translations.es['file-status-ready'] = "Listo";
+        
+        translations.en['file-status-processing'] = "Processing...";
+        translations.fr['file-status-processing'] = "Traitement...";
+        translations.es['file-status-processing'] = "Procesando...";
+        
+        translations.en['file-status-completed'] = "Completed";
+        translations.fr['file-status-completed'] = "Terminé";
+        translations.es['file-status-completed'] = "Completado";
+        
+        translations.en['file-status-error'] = "Error";
+        translations.fr['file-status-error'] = "Erreur";
+        translations.es['file-status-error'] = "Error";
+        
+        translations.en['share-gsheets-message'] = "Sharing to Google Sheets is a premium feature. Please contact sales.";
+        translations.fr['share-gsheets-message'] = "Le partage vers Google Sheets est une fonctionnalité premium. Veuillez contacter les ventes.";
+        translations.es['share-gsheets-message'] = "Compartir en Hojas de cálculo de Google es una función premium. Por favor, contacte con ventas.";
     </script>
 </body>
 </html>

@@ -1,3 +1,13 @@
+// This file MUST be placed in the `api` directory of your project
+// to correctly handle POST requests at the `/api/extract-invoice` endpoint.
+//
+// NOTE: For Vercel deployment, your package.json must include these dependencies:
+// "dependencies": {
+//   "@google/generative-ai": "^0.24.1",
+//   "pdf-lib": "^1.17.1",
+//   "sharp": "^0.33.4"
+// }
+
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { PDFDocument } = require('pdf-lib');
 const sharp = require('sharp');

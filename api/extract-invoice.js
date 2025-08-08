@@ -1,3 +1,6 @@
+// This file MUST be placed in the `api` directory of your project
+// to correctly handle POST requests at the `/api/extract-invoice` endpoint.
+
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 module.exports = async (request, response) => {
@@ -71,6 +74,7 @@ Important rules:
     };
 
     // Generate content from the model
+    // The generationConfig and responseSchema ensure a structured JSON response.
     const result = await model.generateContent({
         contents: [{
             parts: [

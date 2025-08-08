@@ -109,10 +109,18 @@ Important rules:
         }
     });
 
-    // The response is already a parsed JSON object due to the generationConfig
-    // We can now safely access the content without manual parsing.
-    const extractedData = result.candidates[0].content.parts[0].text;
+    // We now add a safety check to prevent a crash if the API response is malformed.
+    const extractedDataPart = result?.candidates?.[0]?.content?.parts?.[0]?.text;
 
+    if (!extractedDataPart) {
+      console.error('Unexpected API response structure:', JSON.stringify(result, null, 2));
+      return response.status(500).json({
+        error: 'Failed to process AI response.',
+        details: 'Unexpected or empty response from the AI model.'
+      });
+    }
+
+    const extractedData = JSON.parse(extractedDataPart);
     return response.status(200).json(extractedData);
 
   } catch (error) {

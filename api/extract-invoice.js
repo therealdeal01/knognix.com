@@ -17,7 +17,8 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-module.exports = async (request, response) => {
+// Use 'export default' for Vercel Serverless Functions
+export default async function (request, response) {
   // Set CORS headers to allow requests from the frontend
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -51,7 +52,8 @@ module.exports = async (request, response) => {
 
     // Initialize the Generative AI model
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // ✅ Change the model to gemini-1.5-pro for better PDF support
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
 
     // Define the prompt for the AI model
     const prompt = `You are an expert invoice data extraction system. Analyze this invoice image and extract the following information in JSON format:
@@ -87,47 +89,18 @@ Important rules:
       let imagePart;
       
       try {
-        if (mimeType.startsWith('image/')) {
-          // Process JPG/PNG files directly
-          imagePart = {
-            inlineData: {
-              data: imageData,
-              mimeType: mimeType
-            }
-          };
-        } else if (mimeType === 'application/pdf') {
-          // Convert the first page of the PDF to a PNG image
-          const pdfBytes = Buffer.from(imageData, 'base64');
-          const pdfDoc = await PDFDocument.load(pdfBytes);
-          
-          if (pdfDoc.getPageCount() === 0) {
-              throw new Error('PDF document has no pages.');
+        imagePart = {
+          inlineData: {
+            data: imageData,
+            mimeType: mimeType
           }
-          
-          // Note: pdf-lib itself doesn't render to an image. The sharp library
-          // cannot directly process a single-page PDF buffer created by pdf-lib.
-          // This part of the code would need a more complex solution involving
-          // a PDF rendering library like 'node-canvas' or a different approach
-          // to be fully functional. For this reason, this PDF conversion logic
-          // is a simplified placeholder.
-          // The AI model can often process PDFs directly, so we'll pass the PDF data.
-          imagePart = {
-            inlineData: {
-              data: imageData,
-              mimeType: mimeType
-            }
-          };
-          
-          // Fallback to simpler PDF conversion if direct processing fails.
-          // The previous code using 'sharp' with pdf-lib is an invalid approach.
-          // The best solution is to pass the base64 PDF data directly to Gemini,
-          // which the new code handles by skipping the sharp conversion.
-        } else {
-          throw new Error(`Unsupported file type: ${mimeType}`);
-        }
+        };
+
+        // Note: The previous logic for PDF conversion with sharp was incorrect.
+        // This streamlined approach passes the PDF data directly to the Gemini API,
+        // which is the intended method for document processing with models like gemini-1.5-pro.
       } catch (error) {
         console.error('File conversion error:', error);
-        // Push a structured error to the results array
         extractedInvoices.push({ error: `File conversion failed: ${error.message}` });
         return; // Skip this file and move to the next one
       }
@@ -139,43 +112,44 @@ Important rules:
       
       while (retries < maxRetries) {
         try {
+          // ✅ Correctly construct the parts array for the Gemini API
+          const parts = [
+            { text: prompt },
+            imagePart
+          ];
+
           result = await model.generateContent({
-              contents: [{
-                  parts: [
-                      { text: prompt },
-                      imagePart
-                  ]
-              }],
-              generationConfig: {
-                  responseMimeType: "application/json",
-                  responseSchema: {
-                      type: "OBJECT",
-                      properties: {
-                          "invoiceNumber": { "type": "STRING", "nullable": true },
-                          "vendorName": { "type": "STRING", "nullable": true },
-                          "invoiceDate": { "type": "STRING", "nullable": true },
-                          "dueDate": { "type": "STRING", "nullable": true },
-                          "totalAmount": { "type": "NUMBER", "nullable": true },
-                          "currency": { "type": "STRING", "nullable": true },
-                          "lineItems": {
-                              "type": "ARRAY",
-                              "items": {
-                                  "type": "OBJECT",
-                                  "properties": {
-                                      "product": { "type": "STRING", "nullable": true },
-                                      "quantity": { "type": "NUMBER", "nullable": true },
-                                      "unitPrice": { "type": "NUMBER", "nullable": true },
-                                      "totalPrice": { "type": "NUMBER", "nullable": true }
-                                  }
-                              }
-                          }
+            contents: [{ parts: parts }],
+            generationConfig: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: "OBJECT",
+                properties: {
+                  "invoiceNumber": { "type": "STRING", "nullable": true },
+                  "vendorName": { "type": "STRING", "nullable": true },
+                  "invoiceDate": { "type": "STRING", "nullable": true },
+                  "dueDate": { "type": "STRING", "nullable": true },
+                  "totalAmount": { "type": "NUMBER", "nullable": true },
+                  "currency": { "type": "STRING", "nullable": true },
+                  "lineItems": {
+                    "type": "ARRAY",
+                    "items": {
+                      "type": "OBJECT",
+                      "properties": {
+                        "product": { "type": "STRING", "nullable": true },
+                        "quantity": { "type": "NUMBER", "nullable": true },
+                        "unitPrice": { "type": "NUMBER", "nullable": true },
+                        "totalPrice": { "type": "NUMBER", "nullable": true }
                       }
+                    }
                   }
+                }
               }
+            }
           });
           
           if (result?.candidates?.[0]?.content?.parts?.[0]?.text) {
-            break;
+            break; // Exit the retry loop on success
           }
         } catch (error) {
           console.error(`AI call failed (Retry ${retries + 1}/${maxRetries}):`, error.message);
@@ -215,5 +189,4 @@ Important rules:
       details: error.message
     });
   }
-};
-
+}
